@@ -21,6 +21,11 @@ migrate = Migrate(app, db)
 # Enable debug toolbar
 toolbar = DebugToolbarExtension(app)
 
+# Configure blueprint urls
+from bucketlist.auth import auth as auth_blueprint
+app.register_blueprint(auth_blueprint, url_prefix='/auth')
+
+
 # Import last after instantiating db, app and other vars since they are
 # required
 from bucketlist import models
