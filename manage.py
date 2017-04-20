@@ -1,7 +1,7 @@
 from bucketlist import app, db
 from flask_script import Manager, prompt_bool
 
-from bucketlist.models import User
+from bucketlist.models import User, Bucketlist, BucketlistItem
 
 manager = Manager(app)
 
@@ -9,8 +9,15 @@ manager = Manager(app)
 @manager.command
 def initdb():
     db.create_all()
-    db.session.add(User(username="wcyn", email="cynthia.abura@andela.com"))
-    db.session.add(User(username="paul", email="paul@andela.com"))
+    user1 = User(username="wcyn", email="cynthia.abura@andela.com")
+    user2 = User(username="paul", email="paul@andela.com")
+    bucketlist = Bucketlist(description="My Bucketlist", user=user1)
+    bucketlist_item = BucketlistItem(description="An item",
+                                     bucketlist=bucketlist)
+    db.session.add(user1)
+    db.session.add(user2)
+    db.session.add(bucketlist)
+    db.session.add(bucketlist_item)
     db.session.commit()
     print("Initialized the database")
 
