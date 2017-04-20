@@ -36,12 +36,20 @@ def index():
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return render_template('404.html'), 404
+    data = {
+        "error": "404",
+        "message": "Page Not Found"
+    }
+    return jsonify(data), 404
 
 
 @app.errorhandler(500)
 def page_not_found(e):
-    return render_template('500.html'), 500
+    data = {
+        "error": "500",
+        "message": "Internal Server Error"
+    }
+    return jsonify(data), 500
 
 
 @app.route('/add')

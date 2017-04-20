@@ -1,7 +1,5 @@
 from datetime import datetime
 
-# import bucketlist
-
 from bucketlist import db
 
 
