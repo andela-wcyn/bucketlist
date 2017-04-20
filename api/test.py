@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from bucketlist import app
+from api import app
 
 
 class APITestCase(unittest.TestCase):

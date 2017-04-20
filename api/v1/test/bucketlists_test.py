@@ -1,8 +1,8 @@
 from flask import url_for
 from flask_testing import TestCase
 
-from bucketlist import db, create_app
-from bucketlist.models import User, Bucketlist, BucketlistItem
+from api import db, create_app
+from api.models import User, Bucketlist, BucketlistItem
 
 
 class BucketlistsTestCase(TestCase):
@@ -38,7 +38,7 @@ class BucketlistsTestCase(TestCase):
     def test_delete_bucketlist(self):
         bucketlist_id = 1
         response = self.client.delete(
-            url_for('bucketlists.bucketlist', bucketlist_id=bucketlist_id),
+            url_for('bucketlists.api', bucketlist_id=bucketlist_id),
             follow_redirects=True
         )
         assert response.status_code == 204

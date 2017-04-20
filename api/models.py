@@ -1,11 +1,9 @@
 from datetime import datetime
 
-from flask_login import UserMixin
-
-from bucketlist import db
+from api import db
 
 
-class User(db.Model, UserMixin):
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True)
     email = db.Column(db.String(120), unique=True)
@@ -20,7 +18,7 @@ class Bucketlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.String(300))
-    items = db.relationship('BucketlistItem', backref='bucketlist',
+    items = db.relationship('BucketlistItem', backref='api',
                             lazy='dynamic')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
@@ -32,7 +30,7 @@ class BucketlistItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.String(300))
-    bucketlist_id = db.Column(db.Integer, db.ForeignKey('bucketlist.id'),
+    bucketlist_id = db.Column(db.Integer, db.ForeignKey('api.id'),
                               nullable=False)
 
     def __repr__(self):
