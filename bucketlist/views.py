@@ -4,8 +4,8 @@ from flask import request
 from flask import jsonify
 from datetime import datetime
 
-from config import app, db
-import models
+from bucketlist import app, db
+from bucketlist.models import User, Bookmark
 
 bucketlist_items = []
 
@@ -17,6 +17,11 @@ def store_item(url, description):
         user="Cynthia",
         data=datetime.utcnow()
     ))
+
+
+# Fake login
+def logged_in_user():
+    return User.query.filter_by(username='wcyn').first()
 
 
 @app.route('/')
@@ -41,9 +46,10 @@ def page_not_found(e):
 
 @app.route('/add')
 def add():
-    user = models.User(username="wcyn", email="wasonga.cynthia@gmail.com")
-    bm = models.Bookmark(url="https://learnmine.com", date=datetime.utcnow(),
-                         description="Some description", user_id=1)
+    user = User(username="wcyn", email="wasonga.cynthia@gmail.com")
+    bm = Bookmark(user=logged_in_user(), url="https://learnmine.com",
+                         date=datetime.utcnow(),
+                         description="Some description")
     try:
         db.session.add(bm)
         db.session.add(user)

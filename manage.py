@@ -1,9 +1,10 @@
-from config import app, db
+from bucketlist import app, db
 from flask_script import Manager, prompt_bool
 
-from models import User
+from bucketlist.models import User
 
 manager = Manager(app)
+
 
 @manager.command
 def initdb():

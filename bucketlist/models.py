@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from config import db
+# import bucketlist
+
+from bucketlist import db
 
 
 class Bookmark(db.Model):

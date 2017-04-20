@@ -1,9 +1,7 @@
 import json
 import unittest
 
-from .run import app
-# from .run import app, db
-# from models import Furniture
+from bucketlist import app
 
 
 class APITestCase(unittest.TestCase):

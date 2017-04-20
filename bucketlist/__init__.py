@@ -1,9 +1,11 @@
 import os
-from datetime import datetime
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+
+from bucketlist import models
+from bucketlist import views
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -14,4 +16,3 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-
