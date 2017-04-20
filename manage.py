@@ -1,9 +1,12 @@
+from flask_migrate import Migrate
+
 from bucketlist import app, db
 from flask_script import Manager, prompt_bool
 
 from bucketlist.models import User, Bucketlist, BucketlistItem
 
 manager = Manager(app)
+migrate = Migrate(app, db)
 
 
 @manager.command

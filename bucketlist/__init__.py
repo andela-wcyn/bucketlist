@@ -2,7 +2,6 @@ import os
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 
 
 from flask_debugtoolbar import DebugToolbarExtension
@@ -16,12 +15,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(
 app.config['DEBUG'] = True
 
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
 
 # Enable debug toolbar
 toolbar = DebugToolbarExtension(app)
 
 # Configure blueprint urls
+from bucketlist.main import main as main_blueprint
+app.register_blueprint(main_blueprint, url_prefix='/')
+
 from bucketlist.auth import auth as auth_blueprint
 app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
