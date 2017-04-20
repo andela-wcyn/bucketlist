@@ -3,7 +3,7 @@ from datetime import datetime
 from bucketlist import db
 
 
-class Bookmark(db.Model):
+class Bucketlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     url = db.Column(db.Text, nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)
@@ -18,7 +18,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True)
     email = db.Column(db.String(120), unique=True)
-    bookmarks = db.relationship('Bookmark', backref='user', lazy='dynamic')
+    bucketlists = db.relationship('Bucketlist', backref='user', lazy='dynamic')
 
     def __repr__(self):
         return "<User %r" % self.username
