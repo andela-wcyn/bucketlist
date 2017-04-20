@@ -3,32 +3,24 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
-
-from flask_debugtoolbar import DebugToolbarExtension
+from bucketlist.config import config_by_name
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'secret')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(
-    basedir, 'bucketlist.db')
-app.config['DEBUG'] = True
-
-db = SQLAlchemy(app)
-
-# Enable debug toolbar
-toolbar = DebugToolbarExtension(app)
-
-# Configure blueprint urls
-from bucketlist.main import main as main_blueprint
-app.register_blueprint(main_blueprint, url_prefix='/')
-
-from bucketlist.auth import auth as auth_blueprint
-app.register_blueprint(auth_blueprint, url_prefix='/auth')
+db = SQLAlchemy()
 
 
-# Import last after instantiating db, app and other vars since they are
-# required
-from bucketlist import models
-from bucketlist import views
+def create_app(config_name):
+    app = Flask(__name__)
+    app.config.from_object(config_by_name[config_name])
+
+    db.init_app(app)
+    # Configure blueprint urls
+    from bucketlist.main import main as main_blueprint
+    app.register_blueprint(main_blueprint, url_prefix='/')
+
+    from bucketlist.auth import auth as auth_blueprint
+    app.register_blueprint(auth_blueprint, url_prefix='/auth')
+
+    return app
+
 

@@ -1,12 +1,16 @@
-from flask_migrate import Migrate
+import os
 
-from bucketlist import app, db
+from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager, prompt_bool
 
+from bucketlist import create_app, db
 from bucketlist.models import User, Bucketlist, BucketlistItem
 
+app = create_app(os.getenv('BUCKETLIST_ENV') or 'dev')
 manager = Manager(app)
 migrate = Migrate(app, db)
+
+manager.add_command('db', MigrateCommand)
 
 
 @manager.command
