@@ -4,6 +4,7 @@ from flask_testing import TestCase
 from bucketlist import db, create_app
 from bucketlist.models import User, Bucketlist, BucketlistItem
 
+
 class BucketlistsTestCase(TestCase):
 
     def create_app(self):
@@ -33,3 +34,14 @@ class BucketlistsTestCase(TestCase):
     def tearDown(self):
         db.session.remove()
         db.drop_all()
+
+    def test_delete_bucketlist(self):
+        bucketlist_id = 1
+        response = self.client.delete(
+            url_for('bucketlists.bucketlist', bucketlist_id=bucketlist_id),
+            follow_redirects=True
+        )
+        assert response.status_code == 204
+        bucketlist = Bucketlist.query.filter_by(id=bucketlist_id)
+        assert not bucketlist
+
