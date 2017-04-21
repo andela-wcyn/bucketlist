@@ -11,7 +11,7 @@ class Config(object):
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(
-        basedir, 'api.db')
+        basedir, 'bucketlist.db')
 
 
 class TestingConfig(Config):
@@ -23,7 +23,7 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(
-        basedir, 'api.db')
+        basedir, 'bucketlist.db')
 
 
 config_by_name = dict(

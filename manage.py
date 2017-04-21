@@ -16,8 +16,9 @@ manager.add_command('db', MigrateCommand)
 @manager.command
 def initdb():
     db.create_all()
-    user1 = User(username="wcyn", email="cynthia.abura@andela.com")
-    user2 = User(username="paul", email="paul@andela.com")
+    user1 = User(username="wcyn", email="cynthia.abura@andela.com",
+                 password="1234567")
+    user2 = User(username="paul", email="paul@andela.com", password="1234567")
     bucketlist = Bucketlist(description="My Bucketlist", user=user1)
     bucketlist_item = BucketlistItem(description="An item",
                                      bucketlist=bucketlist)
@@ -31,7 +32,7 @@ def initdb():
 
 @manager.command
 def dropdb():
-    if prompt_bool("Are you sure you want to lose all your data"):
+    if prompt_bool("Are you sure you want to lose all your data?"):
         db.drop_all()
         print("Dropped the database")
 

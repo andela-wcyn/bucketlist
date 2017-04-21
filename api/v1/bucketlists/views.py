@@ -3,8 +3,8 @@ from flask import jsonify
 from . import bucketlists
 
 
-@bucketlists.route('/')
-def list_all():
+@bucketlists.route('/', methods=['POST', 'GET'])
+def all_bucketlists():
     data = {
         "text": "Bucketlist 1",
         "color": "blue"
@@ -12,8 +12,8 @@ def list_all():
     return jsonify(data)
 
 
-@bucketlists.route('/<id>')
-def bucketlist(id):
+@bucketlists.route('/<id>', methods=['POST', 'GET'])
+def bucketlist_item(id):
     data = {
         "text": "Bucketlist 1",
         "id": id
