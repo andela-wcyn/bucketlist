@@ -9,9 +9,15 @@ from api.models import User, Bucketlist, BucketlistItem
 class BucketlistsTestCase(TestCase):
 
     def create_app(self):
+        """
+        Override create app method
+        """
         return create_app('test')
 
     def setUp(self):
+        """
+        Create objects in the database to use for testing
+        """
         self.db = db
         self.db.create_all()
         self.client = self.app.test_client()
@@ -34,13 +40,19 @@ class BucketlistsTestCase(TestCase):
                          data=dict(username='wcyn', password='12345678'))
 
     def tearDown(self):
+        """
+        Delete all data from the test database
+        """
         self.db.session.remove()
         self.db.drop_all()
 
     # POST /bucketlists/ #
     # ------------------ #
 
-    def test_post_bucketlists_treturns_creaed_bucketlist(self):
+    def test_post_bucketlists(self):
+        """
+        Tests it returns the newly created bucketlist
+        """
         new_bucketlist = {
             "description": "Travel",
             "user": 1
@@ -54,6 +66,9 @@ class BucketlistsTestCase(TestCase):
         self.assertIn(b'"user": "1"', response.data)
 
     def test_post_bucketlists_returns_400_error_on_wrong_fields(self):
+        """
+        Test it returns 400 Bad Request error on wrong fields
+        """
         new_bucketlist = {
             "test": "Travel",
             "test2": 1
@@ -67,6 +82,9 @@ class BucketlistsTestCase(TestCase):
         self.assertNotIn(b'"test2": 1', response.data)
 
     def test_post_bucketlists_returns_400_error_on_missing_fields(self):
+        """
+        Test it returns 400 Bad Request error on missing fields
+        """
         new_bucketlist = {
             "description": "Travel"
         }
@@ -81,6 +99,9 @@ class BucketlistsTestCase(TestCase):
     # ----------------- #
 
     def test_get_bucketlists_returns_list_of_bucketlists(self):
+        """
+        Test it returns a list of bucketlists
+        """
         bucketlist2 = Bucketlist(description="My Bucketlist 2",
                                  user=self.user1)
         self.db.session.add(bucketlist2)
@@ -98,6 +119,9 @@ class BucketlistsTestCase(TestCase):
     # --------------------- #
 
     def test_get_bucketlists_id_returns_404_error_if_not_exists(self):
+        """
+        Test it returns 404 not found error if not exists
+        """
 
         response = self.client.get(
             url_for('bucketlists.bucketlist_item', id=20),
@@ -108,7 +132,9 @@ class BucketlistsTestCase(TestCase):
         self.assertNotIn(b'"description": "My Bucketlist 2"', response.data)
 
     def test_get_bucketlists_id_returns_correct_bucketlist(self):
-
+        """
+        Test it returns the correct bucketlist given the id
+        """
         response = self.client.get(
             url_for('bucketlists.bucketlist_item', id=1)
         )
