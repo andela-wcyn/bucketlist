@@ -62,9 +62,8 @@ class BucketlistsTestCase(TestCase):
             data=json.dumps(new_bucketlist)
         )
         data_dict = json.loads(response.data)
-        bucketlist = {"description": "Travel", "user": 1}
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(bucketlist, data_dict)
+        self.assertEqual(new_bucketlist, data_dict)
 
     def test_post_bucketlists_with_wrong_fields(self):
         """
@@ -127,7 +126,7 @@ class BucketlistsTestCase(TestCase):
         Test it returns the correct bucketlist given the id
         """
         response = self.client.get(
-            url_for('bucketlists.bucketlist_item', id=1)
+            url_for('bucketlists.bucketlist', id=1)
         )
         data_dict = json.loads(response.data)
         bucketlist = {"description": "My Bucketlist", "user": 1}
@@ -139,7 +138,7 @@ class BucketlistsTestCase(TestCase):
         Test it returns 404 not found error if not exists
         """
         response = self.client.get(
-            url_for('bucketlists.bucketlist_item', id=20)
+            url_for('bucketlists.bucketlist', id=20)
         )
         data_dict = json.loads(response.data)
         bucketlist1 = {"description": "My Bucketlist", "user": 1}
@@ -157,7 +156,7 @@ class BucketlistsTestCase(TestCase):
             "description": "My Bucketlist modified"
         }
         response = self.client.put(
-            url_for('bucketlists.bucketlist_item', id=1), data=json.dumps(
+            url_for('bucketlists.bucketlist', id=1), data=json.dumps(
                 modified_bucketlist))
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(b'"description": "My Bucketlist"', response.data)
@@ -173,7 +172,7 @@ class BucketlistsTestCase(TestCase):
             "description": "My Bucketlist modified"
         }
         response = self.client.put(
-            url_for('bucketlists.bucketlist_item', id=1), data=json.dumps(
+            url_for('bucketlists.bucketlist', id=1), data=json.dumps(
                 modified_bucketlist))
         self.assertEqual(response.status_code, 404)
 
@@ -185,7 +184,7 @@ class BucketlistsTestCase(TestCase):
             "some_field": "My Bucketlist modified"
         }
         response = self.client.put(
-            url_for('bucketlists.bucketlist_item', id=1), data=json.dumps(
+            url_for('bucketlists.bucketlist', id=1), data=json.dumps(
                 modified_bucketlist))
         self.assertEqual(response.status_code, 400)
 
@@ -201,7 +200,7 @@ class BucketlistsTestCase(TestCase):
             "message": "Invalid Data"
         }
         response = self.client.put(
-            url_for('bucketlists.bucketlist_item', id=1), data=json.dumps(
+            url_for('bucketlists.bucketlist', id=1), data=json.dumps(
                 modified_bucketlist))
         data_dict = json.loads(response.data)
         self.assertEqual(error, data_dict)
@@ -219,11 +218,11 @@ class BucketlistsTestCase(TestCase):
         }
 
         response = self.client.delete(
-            url_for('bucketlists.bucketlist_item', id=1))
+            url_for('bucketlists.bucketlist', id=1))
         self.assertEqual(response.status_code, 204)
         # Check if the bucketlist exists by GETTING it
         response = self.client.get(
-            url_for('bucketlists.bucketlist_item', id=1))
+            url_for('bucketlists.bucketlist', id=1))
         self.assertEqual(response.status_code, 404)
 
     def test_delete_bucketlists_id_not_exists(self):
@@ -232,9 +231,57 @@ class BucketlistsTestCase(TestCase):
         """
 
         response = self.client.delete(
-            url_for('bucketlists.bucketlist_item', id=1))
+            url_for('bucketlists.bucketlist', id=1))
         self.assertEqual(response.status_code, 404)
 
+    # POST /bucketlists/<id>/items/ #
+    # ----------------------------- #
+
+    def test_post_bucketlists_items(self):
+        """
+        Test it returns the newly created bucketlist item
+        """
+        new_bucketlist_item = {
+            "description": "Travel to Cairo",
+            "bucketlist_id": 1
+        }
+        response = self.client.post(
+            url_for('bucketlists.bucketlist_items', id=1),
+            data=json.dumps(new_bucketlist_item)
+        )
+        data_dict = json.loads(response.data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(new_bucketlist_item, data_dict)
+
+    def test_post_bucketlists_items_with_wrong_fields(self):
+        """
+        Test it returns 400 Bad Request error on wrong fields
+        """
+        new_bucketlist_item = {
+            "tests": "Travel Somewhere",
+            "test2": 1
+        }
+        response = self.client.post(
+            url_for('bucketlists.bucketlist_items', id=1),
+            data=json.dumps(new_bucketlist_item)
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn(b'"tests": "Travel"', response.data)
+        self.assertNotIn(b'"test2": 1', response.data)
+
+    def test_post_bucketlists_item_with_missing_fields(self):
+        """
+        Test it returns 400 Bad Request error on missing fields
+        """
+        new_bucketlist_item = {
+            "description": "Travel to Cairo"
+        }
+        response = self.client.post(
+            url_for('bucketlists.bucketlist_items', id=1),
+            data=json.dumps(new_bucketlist_item)
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn(b'"description": "Travel to Cairo"', response.data)
 
 # bucketlist = Bucketlist.query.filter_by(id=bucketlist_id)
 # assert not bucketlist
