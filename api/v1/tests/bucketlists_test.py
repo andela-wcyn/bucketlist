@@ -207,6 +207,34 @@ class BucketlistsTestCase(TestCase):
         self.assertEqual(error, data_dict)
         self.assertEqual(response.status_code, 400)
 
+        # DELETE /bucketlists/<id> #
+        # ------------------------ #
+
+    def test_delete_bucketlists_id(self):
+        """
+        Test it deletes a bucketlist
+        """
+        bucketlist = {
+            "description": "My Bucketlist"
+        }
+
+        response = self.client.delete(
+            url_for('bucketlists.bucketlist_item', id=1))
+        self.assertEqual(response.status_code, 204)
+        # Check if the bucketlist exists by GETTING it
+        response = self.client.get(
+            url_for('bucketlists.bucketlist_item', id=1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_bucketlists_id_not_exists(self):
+        """
+        Test it returns 404 if Bucketlist does not exist
+        """
+
+        response = self.client.delete(
+            url_for('bucketlists.bucketlist_item', id=1))
+        self.assertEqual(response.status_code, 404)
+
 
 # bucketlist = Bucketlist.query.filter_by(id=bucketlist_id)
 # assert not bucketlist
