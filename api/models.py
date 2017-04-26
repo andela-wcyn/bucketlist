@@ -21,7 +21,7 @@ class User(db.Model):
         self._password = bcrypt.generate_password_hash(plaintext)
 
     def __repr__(self):
-        return "<User %r" % self.username
+        return "<User %r>" % self.username
 
 
 class Bucketlist(db.Model):
@@ -33,7 +33,7 @@ class Bucketlist(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
-        return "<Bucketlist '{}': '{}'".format(self.description, self.user_id)
+        return "<Bucketlist '{}': '{}'>".format(self.description, self.user_id)
 
 
 class BucketlistItem(db.Model):

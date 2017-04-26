@@ -6,7 +6,7 @@ from . import auth
 @auth.route('/login', methods=['POST'])
 def login():
     data = {
-        "test": "test",
+        "tests": "tests",
     }
     return jsonify(data)
 
@@ -14,6 +14,6 @@ def login():
 @auth.route('/register', methods=['POST'])
 def register():
     data = {
-        "test": "test",
+        "tests": "tests",
     }
     return jsonify(data)
