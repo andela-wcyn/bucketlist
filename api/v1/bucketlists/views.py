@@ -30,9 +30,9 @@ def bucketlist(id):
 
 @bucketlists.route('/<id>/items', methods=['POST', 'GET'])
 def bucketlist_items(id):
-    data = {
+    data = [{
         "text": "Bucketlist Item",
         "bucketlist": 1,
         "id": int(id)
-    }
+    }]
     return jsonify(data)
