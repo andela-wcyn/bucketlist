@@ -328,7 +328,7 @@ class BucketlistsTestCase(TestCase):
         self.assertIn(new_bucketlist_item, data_dict)
         self.assertEqual(len(data_dict), 2)
 
-    def test_get_bucketlists_item_empty_bucketlist(self):
+    def test_get_bucketlists_items_empty_bucketlist(self):
         """
         Test it returns empty list for an empty bucketlist
         """
@@ -343,7 +343,7 @@ class BucketlistsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(data_dict), 0)
 
-    def test_get_bucketlists_item_bucketlist_not_exists(self):
+    def test_get_bucketlists_items_bucketlist_not_exists(self):
         """
         Test it returns 404 Bad Request error when bucketlist does not exist
         """
@@ -351,6 +351,44 @@ class BucketlistsTestCase(TestCase):
             url_for('bucketlists.bucketlist_items', id=4)
         )
         self.assertEqual(response.status_code, 404)
+
+    # GET /bucketlists/<id>/items/<item_id> #
+    # ------------------------------------- #
+
+    def test_get_bucketlists_item(self):
+        """
+        Test it returns a particular bucketlist item for the bucketlist
+        """
+
+        response = self.client.get(
+            url_for('bucketlists.bucketlist_items', id=1, item_id=1)
+        )
+        data_dict = json.loads(response.data)
+        bucketlist_item = {
+            "description": "An item",
+            "bucketlist_id": 1
+        }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(bucketlist_item, data_dict)
+
+    def test_get_bucketlists_item_not_exists(self):
+        """
+        Test it returns 404 Not Found Error if item does not exist
+        """
+        response = self.client.get(
+            url_for('bucketlists.bucketlist_items', id=1, item_id=1)
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_bucketlists_item_bucketlist_not_exists(self):
+        """
+        Test it returns 404 Bad Request error when bucketlist does not exist
+        """
+        response = self.client.get(
+            url_for('bucketlists.bucketlist_items', id=4, item_id=1)
+        )
+        self.assertEqual(response.status_code, 404)
+
 
 # bucketlist = Bucketlist.query.filter_by(id=bucketlist_id)
 # assert not bucketlist

@@ -36,3 +36,13 @@ def bucketlist_items(id):
         "id": int(id)
     }]
     return jsonify(data)
+
+
+@bucketlists.route('/<id>/items/<item_id>', methods=['POST', 'GET'])
+def bucketlist_item(id, item_id):
+    data = [{
+        "text": "Bucketlist Item",
+        "bucketlist": 1,
+        "id": int(id)
+    }]
+    return jsonify(data)
