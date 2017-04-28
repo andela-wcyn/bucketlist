@@ -2,7 +2,8 @@ from flask import json
 from flask import url_for
 
 from api import db, create_app
-from .base_testcases import BaseTestCase, APIGetTestCase, APIPostTestCase
+from .base_testcases import (BaseTestCase, APIGetTestCase,
+                             APIPostTestCase, APIPutTestCase)
 from api.models import User, Bucketlist, BucketlistItem
 
 
@@ -35,14 +36,67 @@ class BucketlistsGetTestCase(APIGetTestCase):
         """
         Test it returns 404 not found error if not exists
         """
-        response = self.client.get(
-            url_for('bucketlists.bucketlist', id=20)
-        )
-        data_dict = json.loads(response.data)
-        bucketlist1 = {"description": "My Bucketlist", "user": 1}
-        bucketlist2 = {"description": "My Bucketlist 2", "user": 1}
-        self.assertEqual(response.status_code, 404)
+        self.url = url_for('bucketlists.bucketlist', id=20)
+        self.expected_data = BaseTestCase.bucketlist_dict
+        self.status = 404
+        self.get_one()
 
+    # GET /bucketlists/<id>/items/ #
+    # ---------------------------- #
+
+    def test_get_bucketlists_items(self):
+        """
+        Test it returns a list of bucketlist items for the bucketlist
+        """
+        self.url = url_for('bucketlists.bucketlist_items', id=1)
+        self.expected_data = [BaseTestCase.bucketlist_item_dict,
+                              BaseTestCase.bucketlist_item2_dict]
+        self.get_all()
+
+    def test_get_bucketlists_items_empty_bucketlist(self):
+        """
+        Test it returns empty list for an empty bucketlist
+        """
+        self.url = url_for('bucketlists.bucketlist_items', id=2)
+        self.get_all()
+
+    def test_get_bucketlists_items_bucketlist_not_exists(self):
+        """
+        Test it returns 404 Not Found error when bucketlist does not exist
+        """
+        self.url = url_for('bucketlists.bucketlist_items', id=4)
+        self.status = 404
+        self.get_all()
+
+    # GET /bucketlists/<id>/items/<item_id> #
+    # ------------------------------------- #
+
+    def test_get_bucketlists_item(self):
+        """
+        Test it returns a particular bucketlist item for the bucketlist
+        """
+        self.url = url_for('bucketlists.bucketlist_items', id=1, item_id=1)
+        self.expected_data = BaseTestCase.bucketlist_item_dict
+        self.get_one()
+
+    def test_get_bucketlists_item_not_exists(self):
+        """
+        Test it returns 404 Not Found Error if item does not exist
+        """
+        self.url = url_for('bucketlists.bucketlist_items', id=1, item_id=4)
+        self.status = 404
+        self.get_one()
+
+    def test_get_bucketlists_item_bucketlist_not_exists(self):
+        """
+        Test it returns 404 Bad Request error when bucketlist does not exist
+        """
+        self.url = url_for('bucketlists.bucketlist_items', id=4, item_id=1)
+        self.status = 404
+        self.get_one()
+
+
+class BucketlistsPutTestCase(APIPutTestCase):
     # PUT /bucketlists/<id> #
     # --------------------- #
 
@@ -194,98 +248,7 @@ class BucketlistsGetTestCase(APIGetTestCase):
         )
         self.assertEqual(response.status_code, 404)
 
-    # GET /bucketlists/<id>/items/ #
-    # ---------------------------- #
 
-    def test_get_bucketlists_items(self):
-        """
-        Test it returns a list of bucketlist items for the bucketlist
-        """
-
-        # Create another bucketlist item
-        self.bucketlist_item2 = BucketlistItem(description="An item 2",
-                                               bucketlist=self.bucketlist)
-        self.db.session.add(self.bucketlist_item2)
-        self.db.session.commit()
-
-        response = self.client.get(
-            url_for('bucketlists.bucketlist_items', id=1)
-        )
-        data_dict = json.loads(response.data)
-
-        bucketlist_item = {
-            "description": "An item",
-            "bucketlist_id": 1
-        }
-        new_bucketlist_item = {
-            "description": "An item 2",
-            "bucketlist_id": 1
-        }
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(bucketlist_item, data_dict)
-        self.assertIn(new_bucketlist_item, data_dict)
-        self.assertEqual(len(data_dict), 2)
-
-    def test_get_bucketlists_items_empty_bucketlist(self):
-        """
-        Test it returns empty list for an empty bucketlist
-        """
-        bucketlist2 = Bucketlist(description="My Bucketlist 2",
-                                 user=self.user1)
-        self.db.session.add(bucketlist2)
-        self.db.session.commit()
-        response = self.client.post(
-            url_for('bucketlists.bucketlist_items', id=2)
-        )
-        data_dict = json.loads(response.data)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(data_dict), 0)
-
-    def test_get_bucketlists_items_bucketlist_not_exists(self):
-        """
-        Test it returns 404 Bad Request error when bucketlist does not exist
-        """
-        response = self.client.get(
-            url_for('bucketlists.bucketlist_items', id=4)
-        )
-        self.assertEqual(response.status_code, 404)
-
-    # GET /bucketlists/<id>/items/<item_id> #
-    # ------------------------------------- #
-
-    def test_get_bucketlists_item(self):
-        """
-        Test it returns a particular bucketlist item for the bucketlist
-        """
-
-        response = self.client.get(
-            url_for('bucketlists.bucketlist_items', id=1, item_id=1)
-        )
-        data_dict = json.loads(response.data)
-        bucketlist_item = {
-            "description": "An item",
-            "bucketlist_id": 1
-        }
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(bucketlist_item, data_dict)
-
-    def test_get_bucketlists_item_not_exists(self):
-        """
-        Test it returns 404 Not Found Error if item does not exist
-        """
-        response = self.client.get(
-            url_for('bucketlists.bucketlist_items', id=1, item_id=1)
-        )
-        self.assertEqual(response.status_code, 404)
-
-    def test_get_bucketlists_item_bucketlist_not_exists(self):
-        """
-        Test it returns 404 Bad Request error when bucketlist does not exist
-        """
-        response = self.client.get(
-            url_for('bucketlists.bucketlist_items', id=4, item_id=1)
-        )
-        self.assertEqual(response.status_code, 404)
 
 
 # bucketlist = Bucketlist.query.filter_by(id=bucketlist_id)

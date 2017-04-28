@@ -17,6 +17,7 @@ class BaseTestCase(TestCase):
     bucketlist_dict = {"description": "My Bucketlist", "user": 1}
     bucketlist2_dict = {"description": "My Bucketlist 2", "user": 1}
     bucketlist_item_dict = {"description": "My Item", "bucketlist": 1}
+    bucketlist_item2_dict = {"description": "My Item 2", "bucketlist": 1}
 
     def create_app(self):
         """
@@ -43,12 +44,15 @@ class BaseTestCase(TestCase):
 
         self.bucketlist_item = BucketlistItem(description="An item",
                                               bucketlist=self.bucketlist)
+        self.bucketlist_item2 = BucketlistItem(description="An item 2",
+                                               bucketlist=self.bucketlist)
 
         self.db.session.add(self.user1)
         self.db.session.add(self.user2)
         self.db.session.add(self.bucketlist)
         self.db.session.add(self.bucketlist2)
         self.db.session.add(self.bucketlist_item)
+        self.db.session.add(self.bucketlist_item2)
         self.db.session.commit()
 
         self.client.post(url_for('auth.login'),
@@ -67,6 +71,7 @@ class APIGetTestCase(BaseTestCase):
     Test abstraction for all the API GET requests
     """
     url = ""
+    status = 200
     expected_data = []  # Expected data
     headers = {}
 
@@ -87,7 +92,7 @@ class APIGetTestCase(BaseTestCase):
             self.assertIn(data, data_dict)
             self.assertIn(data, data_dict)
 
-    def get_one(self, status=200):
+    def get_one(self):
         """
         :param status: Status expected in the response
         :type status: Integer
@@ -96,7 +101,7 @@ class APIGetTestCase(BaseTestCase):
         """
         response = self.get_data()
         data_dict = json.loads(response.data)
-        self.assertEqual(response.status_code, status)
+        self.assertEqual(response.status_code, self.status)
 
         # Ensure expected data exists in response
         self.assertEqual(self.expected_data, data_dict)
@@ -110,6 +115,20 @@ class APIGetTestCase(BaseTestCase):
 
 
 class APIPostTestCase(BaseTestCase):
+    """
+    Test abstraction for all the API GET requests
+    """
+    url_pattern = ""
+    context = {}  # Expected data
+    headers = {}
+
+    def post_data(self):
+        return self.client.post(self.url,
+                                data=json.dumps(self.context),
+                                headers=json.dumps(self.headers))
+
+
+class APIPutTestCase(BaseTestCase):
     """
     Test abstraction for all the API GET requests
     """
