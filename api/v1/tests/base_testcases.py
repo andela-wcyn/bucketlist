@@ -118,7 +118,7 @@ class APIPostTestCase(BaseTestCase):
     """
     Test abstraction for all the API GET requests
     """
-    url_pattern = ""
+    url = ""
     context = {}  # Expected data
     headers = {}
 
@@ -132,11 +132,25 @@ class APIPutTestCase(BaseTestCase):
     """
     Test abstraction for all the API GET requests
     """
-    url_pattern = ""
+    url = ""
     context = {}  # Expected data
     headers = {}
 
-    def post_data(self):
+    def put_data(self):
+        return self.client.post(self.url,
+                                data=json.dumps(self.context),
+                                headers=json.dumps(self.headers))
+
+
+class APIDeleteTestCase(BaseTestCase):
+    """
+    Test abstraction for all the API GET requests
+    """
+    url = ""
+    context = {}  # Expected data
+    headers = {}
+
+    def delete_data(self):
         return self.client.post(self.url,
                                 data=json.dumps(self.context),
                                 headers=json.dumps(self.headers))
