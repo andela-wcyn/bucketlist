@@ -1,99 +1,12 @@
 from flask import json
 from flask import url_for
-from flask_testing import TestCase
 
 from api import db, create_app
+from .base_testcases import BaseTestCase, APIGetTestCase, APIPostTestCase
 from api.models import User, Bucketlist, BucketlistItem
 
 
-class BucketlistsTestCase(TestCase):
-
-    def create_app(self):
-        """
-        Override create app method
-        """
-        return create_app('test')
-
-    def setUp(self):
-        """
-        Create objects in the database to use for testing
-        """
-        self.db = db
-        self.db.create_all()
-        self.client = self.app.test_client()
-
-        self.user1 = User(username="wcyn", email="cynthia.abura@andela.com",
-                          password='12345678')
-        self.user2 = User(username="paul", email="paul@andela.com",
-                          password='12345678')
-        self.bucketlist = Bucketlist(description="My Bucketlist",
-                                     user=self.user1)
-        self.bucketlist_item = BucketlistItem(description="An item",
-                                              bucketlist=self.bucketlist)
-        self.db.session.add(self.user1)
-        self.db.session.add(self.user2)
-        self.db.session.add(self.bucketlist)
-        self.db.session.add(self.bucketlist_item)
-        self.db.session.commit()
-
-        self.client.post(url_for('auth.login'),
-                         data=dict(username='wcyn', password='12345678'))
-
-    def tearDown(self):
-        """
-        Delete all data from the test database
-        """
-        self.db.session.remove()
-        self.db.drop_all()
-
-    # POST /bucketlists/ #
-    # ------------------ #
-
-    def test_post_bucketlists(self):
-        """
-        Test it returns the newly created bucketlist
-        """
-        new_bucketlist = {
-            "description": "Travel",
-            "user": 1
-        }
-        response = self.client.post(
-            url_for('bucketlists.all_bucketlists'),
-            data=json.dumps(new_bucketlist)
-        )
-        data_dict = json.loads(response.data)
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(new_bucketlist, data_dict)
-
-    def test_post_bucketlists_with_wrong_fields(self):
-        """
-        Test it returns 400 Bad Request error on wrong fields
-        """
-        new_bucketlist = {
-            "tests": "Travel",
-            "test2": 1
-        }
-        response = self.client.post(
-            url_for('bucketlists.all_bucketlists'),
-            data=json.dumps(new_bucketlist)
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertNotIn(b'"tests": "Travel"', response.data)
-        self.assertNotIn(b'"test2": 1', response.data)
-
-    def test_post_bucketlists_with_missing_fields(self):
-        """
-        Test it returns 400 Bad Request error on missing fields
-        """
-        new_bucketlist = {
-            "description": "Travel"
-        }
-        response = self.client.post(
-            url_for('bucketlists.all_bucketlists'),
-            data=json.dumps(new_bucketlist)
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertNotIn(b'"description": "Travel"', response.data)
+class BucketlistsGetTestCase(APIGetTestCase):
 
     # GET /bucketlists/ #
     # ----------------- #
@@ -102,21 +15,10 @@ class BucketlistsTestCase(TestCase):
         """
         Test it returns a list of bucketlists
         """
-        bucketlist2 = Bucketlist(description="My Bucketlist 2",
-                                 user=self.user1)
-        self.db.session.add(bucketlist2)
-        self.db.session.commit()
-
-        response = self.client.get(
-            url_for('bucketlists.all_bucketlists')
-        )
-        data_dict = json.loads(response.data)
-        bucketlist1 = {"description": "My Bucketlist", "user": 1}
-        bucketlist2 = {"description": "My Bucketlist 2", "user": 1}
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(bucketlist1, data_dict)
-        self.assertIn(bucketlist2, data_dict)
-        self.assertEqual(2, len(data_dict))
+        self.url = url_for("bucketlists.all_bucketlists")
+        self.expected_data = [BaseTestCase.bucketlist_dict,
+                              BaseTestCase.bucketlist2_dict]
+        self.get_all()
 
     # GET /bucketlists/<id> #
     # --------------------- #
@@ -125,13 +27,9 @@ class BucketlistsTestCase(TestCase):
         """
         Test it returns the correct bucketlist given the id
         """
-        response = self.client.get(
-            url_for('bucketlists.bucketlist', id=1)
-        )
-        data_dict = json.loads(response.data)
-        bucketlist = {"description": "My Bucketlist", "user": 1}
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(bucketlist, data_dict)
+        self.url = url_for('bucketlists.bucketlist', id=1)
+        self.expected_data = BaseTestCase.bucketlist_dict
+        self.get_one()
 
     def test_get_bucketlists_id_if_not_exists(self):
         """
@@ -401,3 +299,54 @@ class BucketlistsTestCase(TestCase):
 #     response = self.client.post("/v1/", data=json.dumps(
 #         new_furniture))
 #     self.assertEqual(response.status_code, 201)
+
+class BucketlistsPostTestCase(APIPostTestCase):
+
+    # POST /bucketlists/ #
+    # ------------------ #
+
+    def test_post_bucketlists(self):
+        """
+        Test it returns the newly created bucketlist
+        """
+        new_bucketlist = {
+            "description": "Travel",
+            "user": 1
+        }
+        response = self.client.post(
+            url_for('bucketlists.all_bucketlists'),
+            data=json.dumps(new_bucketlist)
+        )
+        data_dict = json.loads(response.data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(new_bucketlist, data_dict)
+
+    def test_post_bucketlists_with_wrong_fields(self):
+        """
+        Test it returns 400 Bad Request error on wrong fields
+        """
+        new_bucketlist = {
+            "tests": "Travel",
+            "test2": 1
+        }
+        response = self.client.post(
+            url_for('bucketlists.all_bucketlists'),
+            data=json.dumps(new_bucketlist)
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn(b'"tests": "Travel"', response.data)
+        self.assertNotIn(b'"test2": 1', response.data)
+
+    def test_post_bucketlists_with_missing_fields(self):
+        """
+        Test it returns 400 Bad Request error on missing fields
+        """
+        new_bucketlist = {
+            "description": "Travel"
+        }
+        response = self.client.post(
+            url_for('bucketlists.all_bucketlists'),
+            data=json.dumps(new_bucketlist)
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn(b'"description": "Travel"', response.data)
