@@ -104,47 +104,36 @@ class BucketlistsPostTestCase(APIPostTestCase):
         """
         Test it returns the newly created bucketlist
         """
-        new_bucketlist = {
+
+        self.post_data = {
             "description": "Travel",
             "user": 1
         }
-        response = self.client.post(
-            url_for('bucketlists.all_bucketlists'),
-            data=json.dumps(new_bucketlist)
-        )
-        data_dict = json.loads(response.data)
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(new_bucketlist, data_dict)
+        self.url = url_for('bucketlists.all_bucketlists')
+        self.create()
 
     def test_post_bucketlists_with_wrong_fields(self):
         """
         Test it returns 400 Bad Request error on wrong fields
         """
-        new_bucketlist = {
+        self.post_data = {
             "tests": "Travel",
             "test2": 1
         }
-        response = self.client.post(
-            url_for('bucketlists.all_bucketlists'),
-            data=json.dumps(new_bucketlist)
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertNotIn(b'"tests": "Travel"', response.data)
-        self.assertNotIn(b'"test2": 1', response.data)
+        self.url = url_for('bucketlists.all_bucketlists')
+        self.status = 400
+        self.create(True)
 
     def test_post_bucketlists_with_missing_fields(self):
         """
         Test it returns 400 Bad Request error on missing fields
         """
-        new_bucketlist = {
+        self.post_data = {
             "description": "Travel"
         }
-        response = self.client.post(
-            url_for('bucketlists.all_bucketlists'),
-            data=json.dumps(new_bucketlist)
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertNotIn(b'"description": "Travel"', response.data)
+        self.url = url_for('bucketlists.all_bucketlists')
+        self.status = 400
+        self.create(True)
 
     # POST /bucketlists/<id>/items/ #
     # ----------------------------- #
@@ -153,60 +142,46 @@ class BucketlistsPostTestCase(APIPostTestCase):
         """
         Test it returns the newly created bucketlist item
         """
-        new_bucketlist_item = {
+        self.post_data = {
             "description": "Travel to Cairo",
             "bucketlist_id": 1
         }
-        response = self.client.post(
-            url_for('bucketlists.bucketlist_items', id=1),
-            data=json.dumps(new_bucketlist_item)
-        )
-        data_dict = json.loads(response.data)
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(new_bucketlist_item, data_dict)
+        self.url = url_for('bucketlists.bucketlist_items', id=1)
+        self.create()
 
     def test_post_bucketlists_items_with_wrong_fields(self):
         """
         Test it returns 400 Bad Request error on wrong fields
         """
-        new_bucketlist_item = {
+        self.post_data = {
             "tests": "Travel Somewhere",
             "test2": 1
         }
-        response = self.client.post(
-            url_for('bucketlists.bucketlist_items', id=1),
-            data=json.dumps(new_bucketlist_item)
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertNotIn(b'"tests": "Travel"', response.data)
-        self.assertNotIn(b'"test2": 1', response.data)
+        self.url = url_for('bucketlists.all_bucketlists', id=1)
+        self.status = 400
+        self.create(True)
 
     def test_post_bucketlists_item_with_missing_fields(self):
         """
         Test it returns 400 Bad Request error on missing fields
         """
-        new_bucketlist_item = {
+        self.post_data = {
             "description": "Travel to Cairo"
         }
-        response = self.client.post(
-            url_for('bucketlists.bucketlist_items', id=1),
-            data=json.dumps(new_bucketlist_item)
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertNotIn(b'"description": "Travel to Cairo"', response.data)
+        self.url = url_for('bucketlists.all_bucketlists', id=1)
+        self.status = 400
+        self.create(True)
 
     def test_post_bucketlists_item_bucketlist_not_exists(self):
         """
         Test it returns 404 Bad Request error when bucketlist does not exist
         """
-        new_bucketlist_item = {
+        self.post_data = {
             "description": "Travel to Cairo"
         }
-        response = self.client.post(
-            url_for('bucketlists.bucketlist_items', id=4),
-            data=json.dumps(new_bucketlist_item)
-        )
-        self.assertEqual(response.status_code, 404)
+        self.url = url_for('bucketlists.all_bucketlists', id=1)
+        self.status = 404
+        self.create(True)
 
 
 class BucketlistsDeleteTestCase(APIDeleteTestCase):

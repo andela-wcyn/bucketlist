@@ -119,13 +119,27 @@ class APIPostTestCase(BaseTestCase):
     Test abstraction for all the API GET requests
     """
     url = ""
-    context = {}  # Expected data
+    post_data = {}
+    status = 201  # Created
     headers = {}
 
-    def post_data(self):
-        return self.client.post(self.url,
-                                data=json.dumps(self.context),
-                                headers=json.dumps(self.headers))
+    def create(self, fail=False):
+        response = self.post()
+        data_dict = json.loads(response.data)
+        self.assertEqual(response.status_code, self.status)
+        self.assertEqual(self.post_data, data_dict)
+
+        if fail:
+            self.assertNotIn(self.post_data, data_dict)
+
+    def post(self):
+        if self.headers:
+            return self.client.post(self.url,
+                                    data=json.dumps(self.post_data),
+                                    headers=json.dumps(self.headers))
+        else:
+            return self.client.post(self.url,
+                                    data=json.dumps(self.post_data))
 
 
 class APIPutTestCase(BaseTestCase):
@@ -133,7 +147,7 @@ class APIPutTestCase(BaseTestCase):
     Test abstraction for all the API GET requests
     """
     url = ""
-    context = {}  # Expected data
+    put_data = {}  # Expected data
     headers = {}
 
     def put_data(self):
@@ -147,7 +161,7 @@ class APIDeleteTestCase(BaseTestCase):
     Test abstraction for all the API GET requests
     """
     url = ""
-    context = {}  # Expected data
+    delete_data = {}  # Expected data
     headers = {}
 
     def delete_data(self):
