@@ -147,13 +147,29 @@ class APIPutTestCase(BaseTestCase):
     Test abstraction for all the API GET requests
     """
     url = ""
-    put_data = {}  # Expected data
+    put_data = {}  # Modified field data
+    status = 200
+    original_data = {}  # Data before modification
     headers = {}
 
-    def put_data(self):
-        return self.client.post(self.url,
-                                data=json.dumps(self.context),
-                                headers=json.dumps(self.headers))
+    def modify(self):
+        response = self.put()
+        data_dict = json.loads(response.data)
+        self.assertEqual(response.status_code, self.status)
+        self.assertNotEqual(self.original_data, data_dict)
+
+        # Update original data dict with new fields
+        self.original_data.update(self.put_data)
+        self.assertEqual(self.original_data, data_dict)
+
+    def put(self):
+        if self.headers:
+            return self.client.put(self.url,
+                                   data=json.dumps(self.put_data),
+                                   headers=json.dumps(self.headers))
+        else:
+            return self.client.put(self.url,
+                                   data=json.dumps(self.put_data))
 
 
 class APIDeleteTestCase(BaseTestCase):
@@ -164,9 +180,9 @@ class APIDeleteTestCase(BaseTestCase):
     delete_data = {}  # Expected data
     headers = {}
 
-    def delete_data(self):
+    def delete(self):
         return self.client.post(self.url,
-                                data=json.dumps(self.context),
+                                data=json.dumps(self.delete_data),
                                 headers=json.dumps(self.headers))
 
 

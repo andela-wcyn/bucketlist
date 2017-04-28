@@ -184,9 +184,51 @@ class BucketlistsPostTestCase(APIPostTestCase):
         self.create(True)
 
 
+class BucketlistsPutTestCase(APIPutTestCase):
+
+    # PUT /bucketlists/<id> #
+    # --------------------- #
+
+    def test_put_bucketlists_id(self):
+        """
+        Test it returns the modified bucketlist with the correct changes
+        """
+        self.put_data = {
+            "description": "My Bucketlist modified"
+        }
+        self.original_data = BaseTestCase.bucketlist_dict
+        self.url = url_for('bucketlists.bucketlist', id=1)
+        self.modify()
+
+    def test_put_bucketlists_id_not_exists(self):
+        """
+        Test it returns 404 not found error if not exists
+        """
+        self.put_data = {
+            "description": "My Bucketlist modified"
+        }
+        self.original_data = BaseTestCase.bucketlist_dict
+        self.url = url_for('bucketlists.bucketlist', id=1)
+        self.status = 404
+        self.modify()
+
+    def test_put_bucketlists_id_wrong_fields(self):
+        """
+        Test it returns 400 Bad Request error on wrong fields
+        """
+        self.put_data = {
+            "some_field": "My Bucketlist modified"
+        }
+        self.original_data = BaseTestCase.bucketlist_dict
+        self.url = url_for('bucketlists.bucketlist', id=1)
+        self.status = 400
+        self.modify()
+
+
 class BucketlistsDeleteTestCase(APIDeleteTestCase):
-        # DELETE /bucketlists/<id> #
-        # ------------------------ #
+
+    # DELETE /bucketlists/<id> #
+    # ------------------------ #
 
     def test_delete_bucketlists_id(self):
         """
@@ -214,67 +256,4 @@ class BucketlistsDeleteTestCase(APIDeleteTestCase):
         self.assertEqual(response.status_code, 404)
         # bucketlist = Bucketlist.query.filter_by(id=bucketlist_id)
         # assert not bucketlist
-
-
-class BucketlistsPutTestCase(APIPutTestCase):
-    # PUT /bucketlists/<id> #
-    # --------------------- #
-
-    def test_put_bucketlists_id(self):
-        """
-        Test it returns the modified bucketlist with the correct changes
-        """
-        modified_bucketlist = {
-            "description": "My Bucketlist modified"
-        }
-        response = self.client.put(
-            url_for('bucketlists.bucketlist', id=1), data=json.dumps(
-                modified_bucketlist))
-        self.assertEqual(response.status_code, 200)
-        self.assertNotIn(b'"description": "My Bucketlist"', response.data)
-        self.assertIn(b'"description": "My Bucketlist modified"',
-                      response.data)
-        self.assertIn(b'"user": "1"', response.data)
-
-    def test_put_bucketlists_id_not_exists(self):
-        """
-        Test it returns 404 not found error if not exists
-        """
-        modified_bucketlist = {
-            "description": "My Bucketlist modified"
-        }
-        response = self.client.put(
-            url_for('bucketlists.bucketlist', id=1), data=json.dumps(
-                modified_bucketlist))
-        self.assertEqual(response.status_code, 404)
-
-    def test_put_bucketlists_id_wrong_fields(self):
-        """
-        Test it returns 400 Bad Request error on wrong fields
-        """
-        modified_bucketlist = {
-            "some_field": "My Bucketlist modified"
-        }
-        response = self.client.put(
-            url_for('bucketlists.bucketlist', id=1), data=json.dumps(
-                modified_bucketlist))
-        self.assertEqual(response.status_code, 400)
-
-    def test_put_bucketlists_id_invalid_data(self):
-        """
-        Test it returns 400 Bad Request error on invalid data
-        """
-        modified_bucketlist = {
-            "some_field": "My Bucketlist modified"
-        }
-        error = {
-            "error": "400",
-            "message": "Invalid Data"
-        }
-        response = self.client.put(
-            url_for('bucketlists.bucketlist', id=1), data=json.dumps(
-                modified_bucketlist))
-        data_dict = json.loads(response.data)
-        self.assertEqual(error, data_dict)
-        self.assertEqual(response.status_code, 400)
 
