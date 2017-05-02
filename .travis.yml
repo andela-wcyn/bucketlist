@@ -12,6 +12,8 @@ branches:
     - tests
 addons:
   postgresql: '9.4'
+before-script:
+  - psql -c 'create database bucketlist_test;' -U postgres
 script:
   - nosetests --rednose --with-coverage --cover-package=models
 after_success: coveralls
