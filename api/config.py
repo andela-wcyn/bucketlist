@@ -11,20 +11,20 @@ class Config(object):
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(
-        basedir, 'bucketlist.db')
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        'DATABASE_URL', 'postgresql://localhost/bucketlist_dev')
 
 
 class TestingConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(
-        basedir, 'data_test.sqlite')
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        'DATABASE_URL', 'postgresql://localhost/bucketlist_test')
 
 
 class ProductionConfig(Config):
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(
-        basedir, 'bucketlist.db')
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        'DATABASE_URL', 'postgresql://localhost/bucketlist')
 
 
 config_by_name = dict(
