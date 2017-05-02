@@ -10,10 +10,8 @@ branches:
     - develop
     - master
     - tests
-services:
-  - postgresql
-before-script:
-  - psql -c 'create database bucketlist_test;' -U postgres
+addons:
+  postgresql: '9.4'
 script:
   - nosetests --rednose --with-coverage --cover-package=models
 after_success: coveralls
