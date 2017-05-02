@@ -116,7 +116,7 @@ class APIGetTestCase(BaseTestCase):
 
 class APIPostTestCase(BaseTestCase):
     """
-    Test abstraction for all the API GET requests
+    Test abstraction for all the API POST requests
     """
     url = ""
     post_data = {}
@@ -144,7 +144,7 @@ class APIPostTestCase(BaseTestCase):
 
 class APIPutTestCase(BaseTestCase):
     """
-    Test abstraction for all the API GET requests
+    Test abstraction for all the API PUT requests
     """
     url = ""
     put_data = {}  # Modified field data
@@ -174,16 +174,26 @@ class APIPutTestCase(BaseTestCase):
 
 class APIDeleteTestCase(BaseTestCase):
     """
-    Test abstraction for all the API GET requests
+    Test abstraction for all the API DELETE requests
     """
     url = ""
-    delete_data = {}  # Expected data
+    deleted_data = {}
+    status = 204
     headers = {}
 
+    def remove(self):
+        response = self.delete()
+        self.assertEqual(response.status_code, self.status)
+        # Check that object does not exist by GETTING it
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 404)
+
     def delete(self):
-        return self.client.post(self.url,
-                                data=json.dumps(self.delete_data),
-                                headers=json.dumps(self.headers))
+        if self.headers:
+            return self.client.delete(self.url,
+                                      headers=json.dumps(self.headers))
+        else:
+            return self.client.delete(self.url)
 
 
 

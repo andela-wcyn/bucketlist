@@ -234,26 +234,15 @@ class BucketlistsDeleteTestCase(APIDeleteTestCase):
         """
         Test it deletes a bucketlist
         """
-        bucketlist = {
-            "description": "My Bucketlist"
-        }
-
-        response = self.client.delete(
-            url_for('bucketlists.bucketlist', id=1))
-        self.assertEqual(response.status_code, 204)
-        # Check if the bucketlist exists by GETTING it
-        response = self.client.get(
-            url_for('bucketlists.bucketlist', id=1))
-        self.assertEqual(response.status_code, 404)
+        url = url_for('bucketlists.bucketlist', id=1)
+        self.remove()
 
     def test_delete_bucketlists_id_not_exists(self):
         """
         Test it returns 404 if Bucketlist does not exist
         """
 
-        response = self.client.delete(
-            url_for('bucketlists.bucketlist', id=1))
-        self.assertEqual(response.status_code, 404)
-        # bucketlist = Bucketlist.query.filter_by(id=bucketlist_id)
-        # assert not bucketlist
+        url = url_for('bucketlists.bucketlist', id=7)
+        status = 404
+        self.remove()
 
