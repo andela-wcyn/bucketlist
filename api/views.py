@@ -3,8 +3,8 @@ from flask import request
 from flask import jsonify
 from datetime import datetime
 
-from bucketlist import app, db
-from bucketlist.models import User, Bucketlist
+from api import app, db
+from api.models import User, Bucketlist
 
 bucketlist_items = []
 
