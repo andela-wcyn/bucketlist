@@ -22,12 +22,19 @@ def initdb():
     bucketlist = Bucketlist(description="My Bucketlist", user=user1)
     bucketlist_item = BucketlistItem(description="An item",
                                      bucketlist=bucketlist)
-    db.session.add(user1)
-    db.session.add(user2)
-    db.session.add(bucketlist)
-    db.session.add(bucketlist_item)
-    db.session.commit()
+    print("db: ", db)
+    # db.session.add(user1)
+    # db.session.add(user2)
+    # db.session.add(bucketlist)
+    # db.session.add(bucketlist_item)
+    # db.session.commit()
     print("Initialized the database")
+
+
+@manager.command
+def create_tables():
+    db.create_all()
+    print("Created model tables")
 
 
 @manager.command

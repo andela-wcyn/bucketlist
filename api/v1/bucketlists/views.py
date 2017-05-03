@@ -34,13 +34,15 @@ class Bucketlists(Resource):
                                  help='The description cannot be blank ',
                                  location='json',
                                  required=True)
-        self.parser.add_argument(
-            'date', type=lambda x: datetime.strptime(x, '%Y-%m-%dT%H:%M:%S'),
-            help='Invalid date type', location='json', required=True)
+        self.parser.add_argument('limit', type=int,
+                                 help='The limit must be an integer',
+                                 location='args')
         super(Bucketlists, self).__init__()
 
     @marshal_with(bucketlist_list_fields)
     def get(self):
+        args = self.parser.parse_args()
+        print("ARGS: ", args)
         data = [{
             "text": "id",
             "color": "blue black"
@@ -63,22 +65,22 @@ class Bucketlists(Resource):
 class BucketlistDetails(Resource):
     def __init__(self):
         self.parser = reqparse.RequestParser()
-        self.parser.add_argument('id', type=int, required=True,
-                                 help='id must be an integer', location='json')
         super(BucketlistDetails, self).__init__()
 
     @marshal_with(bucketlist_fields)
-    def get(self, **kwargs):
+    def get(self, id):
         data = {
-            "id": kwargs["id"],
+            "id": id,
             "description": "best day ever yay!",
             "color": "Hue"
         }
-        print("KWARGS: ", kwargs)
+        # print("KWARGS: ", kwargs)
+        args = self.parser.parse_args()
+        print("ARGS:;;: ", args)
         # self.parser.add_argument('key1', type=str)
-        # self.parser.add_argument('key2', type=str)
+        # self.parser.add_arguments('key2', type=str)
 
-        return self.parser.parse_args()
+        return data
         # abort_if_bucketlist_doesnt_exist(1)
         # return data
 
@@ -92,8 +94,6 @@ class BucketlistDetails(Resource):
         # print("ARGS: ", id)
         # self.parser.add_argument('key1', type=str)
         # self.parser.add_argument('key2', type=str)
-        args = self.parser.parse_args()
-        print("ARGS: ", args)
         # abort_if_bucketlist_doesnt_exist(id)
         id = {'id': args['id']}
         print("Putting!", id)
