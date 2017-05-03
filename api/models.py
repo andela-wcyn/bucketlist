@@ -20,6 +20,10 @@ class User(db.Model):
     def password(self, plaintext):
         self._password = bcrypt.generate_password_hash(plaintext)
 
+    def create_user(self):
+        db.session.add(self)
+        db.session.commit()
+
     def __repr__(self):
         return "<User %r>" % self.username
 
