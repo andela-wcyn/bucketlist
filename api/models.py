@@ -115,25 +115,6 @@ class User(db.Model):
         if token:
             return token.decode()
         return None
-    #
-    # @staticmethod
-    # def verify_auth_token(token):
-    #     """
-    #     Verifies auth token
-    #     Args:
-    #         token
-    #     Returns:
-    #         A user object
-    #     """
-    #     s = Serializer(DevelopmentConfig.SECRET_KEY)
-    #     try:
-    #         data = s.loads(token)
-    #     except SignatureExpired:
-    #         return None  # valid token, but expired
-    #     except BadSignature:
-    #         return None  # invalid token
-    #     user = User.query.get(data['id'])
-    #     return user
 
     @staticmethod
     def authenticate(identifier, password, method='email'):

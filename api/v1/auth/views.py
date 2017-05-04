@@ -2,19 +2,19 @@ from flask import json
 from flask import request
 from flask_marshmallow import Marshmallow
 from flask import current_app as app
-from flask_restful import Api, Resource, abort
+from flask_restful import Api, Resource
 from marshmallow import ValidationError
 from marshmallow import fields
 from marshmallow import validates
 
-from api.error_handler import ErrorHandler
+from api.error_formatter import ErrorFormatter
 from api.models import User
 from . import auth
 
 
 api = Api(auth)
 ma = Marshmallow(auth)
-err = ErrorHandler()
+err = ErrorFormatter()
 
 
 class UserSchema(ma.Schema):

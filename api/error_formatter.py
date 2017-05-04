@@ -1,4 +1,4 @@
-class ErrorHandler(object):
+class ErrorFormatter(object):
     @staticmethod
     def format_field_errors(errors):
         # Bad request
