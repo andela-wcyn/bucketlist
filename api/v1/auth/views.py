@@ -2,14 +2,17 @@ from flask import json
 from flask import request
 from flask_jwt import JWT, jwt_required
 from flask_marshmallow import Marshmallow
+from flask import current_app as app
 from flask_restful import Api, Resource, abort
 from marshmallow import ValidationError
 from marshmallow import fields
 from marshmallow import validates
 
+from api import config_by_name
 from api.error_handler import ErrorHandler
 from api.models import User
 from . import auth
+
 
 api = Api(auth)
 ma = Marshmallow(auth)
@@ -72,6 +75,7 @@ class LoginSchema(ma.Schema):
     #     return User(**data)
 
 user_schema = UserSchema()
+login_schema = LoginSchema()
 
 
 def abort_if_user_doesnt_exist(id=True):
@@ -116,12 +120,19 @@ class Login(Resource):
                                      post_data['password'],
                                      method='username')
         # print("Request decoded: ", post_data, type(post_data))
+        print("\n\nUSer!!: ", user)
         if isinstance(user, User):
-            data, error = user_schema.load(user)
-            print("\n\n **result args:  ", data, error)
-            if error:
-                return err.format_field_errors(error)
-            return data, 200
+            secret = app.config.get('SECRET_KEY')
+            token = user.generate_auth_token(secret)
+            # data, error = login_schema.dump(user)
+            # print("\n\n **result args:  ", data, error)
+            # if error:
+            #     return err.format_field_errors(error)
+            if token:
+                return {"token": token.decode()}, 200
+            else:
+                return err.format_general_errors(
+                    "Could not generate token for user")
         else:
             return err.format_general_errors(
                 "Login failed. {}".format(user))

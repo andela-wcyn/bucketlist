@@ -101,7 +101,9 @@ class User(db.Model):
 
         # s = Serializer(DevelopmentConfig.SECRET_KEY, expires_in=expiration)
         print("\n\n Token!: ", token)
-        return token
+        if token:
+            return token
+        return None
     #
     # @staticmethod
     # def verify_auth_token(token):
