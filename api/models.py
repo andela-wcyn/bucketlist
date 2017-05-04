@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from datetime import datetime, timedelta
 import jwt
 from marshmallow import ValidationError
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -89,18 +88,23 @@ class User(db.Model):
 
     def generate_auth_token(self, secret_key, expiration=3000):
         """
-        Generates auth token
-        Args:
-            self, expiration
-        Returns:
-            The authentication token
+        Generate the JWT token used to authenticate the user
+        :param secret_key:
+        :type secret_key:
+        :param expiration:
+        :type expiration:
+        :return:
+        :rtype:
         """
         token = jwt.encode({
-            'id': self.id
+            'id': self.id,
+            'exp': datetime.utcnow() + timedelta(seconds=30),
+            'iat': datetime.utcnow(),
+            'nbf': datetime.utcnow()
         }, secret_key, algorithm='HS256')
 
-        # s = Serializer(DevelopmentConfig.SECRET_KEY, expires_in=expiration)
         print("\n\n Token!: ", token)
+
         if token:
             return token
         return None
@@ -174,4 +178,15 @@ class BucketlistItem(db.Model):
     def __repr__(self):
         return "<Bucketlist Item '{}': '{}'".format(
             self.description, self.bucketlist_id)
+
+
+class UserToken(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(300), unique=True)
+    user = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False,
+                     unique=True)
+
+    def __repr__(self):
+        return "<User Token '{}': '{}'".format(
+            self.user, self.token)
 

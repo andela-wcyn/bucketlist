@@ -84,7 +84,7 @@ def abort_if_user_doesnt_exist(id=True):
 
 
 class Register(Resource):
-    # method_decorators = [jwt_required()]
+    method_decorators = [jwt_required()]
 
     @staticmethod
     def post():
@@ -128,11 +128,11 @@ class Login(Resource):
             # print("\n\n **result args:  ", data, error)
             # if error:
             #     return err.format_field_errors(error)
-            if token:
-                return {"token": token.decode()}, 200
-            else:
-                return err.format_general_errors(
-                    "Could not generate token for user")
+            # if token:
+            #     return {"token": token.decode()}, 200
+            # else:
+            #     return err.format_general_errors(
+            #         "Could not generate token for user")
         else:
             return err.format_general_errors(
                 "Login failed. {}".format(user))
