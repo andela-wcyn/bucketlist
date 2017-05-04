@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from marshmallow import ValidationError
 from sqlalchemy.ext.hybrid import hybrid_property
 from validate_email import validate_email
 
@@ -33,7 +34,7 @@ class User(db.Model):
         if validate_email(email_str):
             return email_str
         else:
-            raise ValueError('{} is not a valid email'.format(email_str))
+            return False
 
     @staticmethod
     def valid_password(pass_str):
@@ -47,25 +48,28 @@ class User(db.Model):
         if len(pass_str) > 6:
             return pass_str
         else:
-            raise ValueError('{} is not a valid password'.format(pass_str))
+            raise False
 
     def validate_user(self):
-        if self.username_exists():
-            raise ValueError('Username {} already exists'.format(
-                self.username))
-        elif self.email_exists():
-            raise ValueError('Email {} already exists'.format(self.email))
+        if self.username_exists(self.username) or self.email_exists(
+                self.email):
+            return False
         else:
             return self
 
-    def username_exists(self):
-        user = User.query.filter_by(username=self.username).first()
+    @staticmethod
+    def username_exists(username):
+        user = User.query.filter_by(username=username).first()
+        print("Username Exists or not?: ", user)
         if user:
+            print("Yes, exists")
             return True
+        print("No, not exists")
         return False
 
-    def email_exists(self):
-        email = User.query.filter_by(email=self.email).first()
+    @staticmethod
+    def email_exists(email):
+        email = User.query.filter_by(email=email).first()
         if email:
             return True
         return False

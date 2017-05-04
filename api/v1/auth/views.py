@@ -17,7 +17,9 @@ ma = Marshmallow(auth)
 class UserSchema(ma.Schema):
     username = mfields.Str(required=True)
     email = mfields.Email(required=True)
-    password = mfields.Str(required=True, load_only=True)
+    password = mfields.Str(required=True, load_only=True,
+                           error_messages={
+                               'required': 'Password is required.'})
     # Smart hyperlinking
     _links = ma.Hyperlinks({
         'self': ma.URLFor('auth.register'),
@@ -32,9 +34,18 @@ class UserSchema(ma.Schema):
     def validate_username(self, username):
         if len(username) < 4:
             raise ValidationError('Username must have 4 or more characters.')
-        if len(username) > 20:
+        elif len(username) > 20:
             raise ValidationError(
                 'Username cannot have more than 20 characters.')
+        elif User.username_exists(username):
+            raise ValidationError("Username '{}' already exists".format(
+                username))
+
+    @validates('email')
+    def validate_email(self, email):
+        if User.email_exists(email):
+            raise ValidationError("The email '{}' is already in use".format(
+                email))
 
     @validates('password')
     def validate_password(self, password):
@@ -93,17 +104,17 @@ class Register(Resource):
 
         post_data = json.loads(request.data.decode())
         print("Request decoded: ", post_data, type(post_data))
-        user = User(username='maria', email="maria",
-                    password='123456')
         data, error = user_schema.load(post_data)
         print("\n\n **result args:  ", data, error)
         if error:
             return error, 400
-        # user = user.create_user()
+        user = User(username=post_data['username'], email=post_data['email'],
+                    password=post_data['password'])
+        user = user.create_user()
         # print("USer: ", user)
         if isinstance(user, User):
             user_data, error = user_schema.dump(data)
-            print("USer_d: ", user_data)
+            print("User_d: ", user_data, error)
             if error:
                 print("Error 2nd: ", error)
                 return error, 400
