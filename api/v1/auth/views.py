@@ -5,6 +5,7 @@ from flask_restful import Api, Resource, reqparse, abort, fields, marshal_with
 from marshmallow import ValidationError
 from marshmallow import post_load
 from marshmallow import fields as mfields
+from marshmallow import validates
 
 from api.models import User
 from . import auth
@@ -13,37 +14,35 @@ api = Api(auth)
 ma = Marshmallow(auth)
 
 
-class UserValidations(object):
-    @staticmethod
-    def validate_username_length(username):
-        if len(username) < 4:
-            raise ValidationError('Username must have 4 or more characters.')
-        if len(username) > 20:
-            raise ValidationError(
-                'Username cannot have more than 20 characters.')
-
-user_validations = UserValidations()
-
-
 class UserSchema(ma.Schema):
-    class Meta:
-        # Fields to expose
-        # fields = ('email', 'username', '_links')
-        # model = User
-        pass
-    username = mfields.Str(required=True,
-                           validate=user_validations.validate_username_length)
+    username = mfields.Str(required=True)
     email = mfields.Email(required=True)
-    password = mfields.Str(required=True)
+    password = mfields.Str(required=True, load_only=True)
     # Smart hyperlinking
     _links = ma.Hyperlinks({
         'self': ma.URLFor('auth.register'),
         'collection': ma.URLFor('bucketlists.bucketlists')
     })
 
-    @post_load
-    def make_user(self, data):
-        return User(**data)
+    # @post_load
+    # def make_user(self, data):
+    #     return User(**data)
+
+    @validates('username')
+    def validate_username(self, username):
+        if len(username) < 4:
+            raise ValidationError('Username must have 4 or more characters.')
+        if len(username) > 20:
+            raise ValidationError(
+                'Username cannot have more than 20 characters.')
+
+    @validates('password')
+    def validate_password(self, password):
+        if len(password) < 4:
+            raise ValidationError('Password must have 4 or more characters.')
+        if len(password) > 20:
+            raise ValidationError(
+                'Password cannot have more than 20 characters.')
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
@@ -96,20 +95,20 @@ class Register(Resource):
         print("Request decoded: ", post_data, type(post_data))
         user = User(username='maria', email="maria",
                     password='123456')
-        data, error = user_schema.dump(post_data)
+        data, error = user_schema.load(post_data)
         print("\n\n **result args:  ", data, error)
         if error:
             return error, 400
         # user = user.create_user()
         # print("USer: ", user)
         if isinstance(user, User):
-            user, error = user_schema.load(post_data)
-            # print("USer_d: ", user.__dict__)
+            user_data, error = user_schema.dump(data)
+            print("USer_d: ", user_data)
             if error:
-                print("Error 2nd")
+                print("Error 2nd: ", error)
                 return error, 400
             # return jsonify(user), 201
-            return data, 201
+            return user_data, 201
         return {"message": user}
 
 api.add_resource(Register, '/register')
