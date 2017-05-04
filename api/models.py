@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy.ext.hybrid import hybrid_property
+from validate_email import validate_email
 
 from api import db, bcrypt
 
@@ -20,9 +21,61 @@ class User(db.Model):
     def password(self, plaintext):
         self._password = bcrypt.generate_password_hash(plaintext)
 
+    @staticmethod
+    def valid_email(email_str):
+        """
+        Return email_str if valid, raise an exception in other case.
+        :param email_str:
+        :type email_str:
+        :return:
+        :rtype:
+        """
+        if validate_email(email_str):
+            return email_str
+        else:
+            raise ValueError('{} is not a valid email'.format(email_str))
+
+    @staticmethod
+    def valid_password(pass_str):
+        """
+        Return pass_str if valid, raise an exception in other case.
+        :param pass_str:
+        :type pass_str:
+        :return:
+        :rtype:
+        """
+        if len(pass_str) > 6:
+            return pass_str
+        else:
+            raise ValueError('{} is not a valid password'.format(pass_str))
+
+    def validate_user(self):
+        if self.username_exists():
+            raise ValueError('Username {} already exists'.format(
+                self.username))
+        elif self.email_exists():
+            raise ValueError('Email {} already exists'.format(self.email))
+        else:
+            return self
+
+    def username_exists(self):
+        user = User.query.filter_by(username=self.username).first()
+        if user:
+            return True
+        return False
+
+    def email_exists(self):
+        email = User.query.filter_by(email=self.email).first()
+        if email:
+            return True
+        return False
+
     def create_user(self):
-        db.session.add(self)
-        db.session.commit()
+        valid_user = self.validate_user()
+        if isinstance(valid_user, User):
+            db.session.add(self)
+            db.session.commit()
+        return valid_user
 
     def __repr__(self):
         return "<User %r>" % self.username
