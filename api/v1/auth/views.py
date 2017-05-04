@@ -13,13 +13,26 @@ api = Api(auth)
 ma = Marshmallow(auth)
 
 
+class UserValidations(object):
+    @staticmethod
+    def validate_username_length(username):
+        if len(username) < 4:
+            raise ValidationError('Username must have 4 or more characters.')
+        if len(username) > 20:
+            raise ValidationError(
+                'Username cannot have more than 20 characters.')
+
+user_validations = UserValidations()
+
+
 class UserSchema(ma.Schema):
     class Meta:
         # Fields to expose
         # fields = ('email', 'username', '_links')
         # model = User
         pass
-    username = mfields.Str(required=True)
+    username = mfields.Str(required=True,
+                           validate=user_validations.validate_username_length)
     email = mfields.Email(required=True)
     password = mfields.Str(required=True)
     # Smart hyperlinking
@@ -32,21 +45,7 @@ class UserSchema(ma.Schema):
     def make_user(self, data):
         return User(**data)
 
-
-def validate_username_length(username):
-        if len(username) < 4:
-            raise ValidationError('Username must have 4 or more characters.')
-        if len(username) > 20:
-            raise ValidationError('Username cannot have more than 20 characters.')
-
-
-class ValidatedUserSchema(UserSchema):
-    # NOTE: This is a contrived example.
-    # You could use marshmallow.validate.Range instead of an anonymous function here
-    username = mfields.Str(validate=validate_username_length)
-
-
-user_schema = ValidatedUserSchema()
+user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 
 user_fields = {
