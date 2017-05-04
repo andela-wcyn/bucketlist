@@ -13,7 +13,6 @@ from . import auth
 api = Api(auth)
 ma = Marshmallow(auth)
 
-
 class UserSchema(ma.Schema):
     username = mfields.Str(required=True)
     email = mfields.Email(required=True)
@@ -49,11 +48,8 @@ class UserSchema(ma.Schema):
 
     @validates('password')
     def validate_password(self, password):
-        if len(password) < 4:
-            raise ValidationError('Password must have 4 or more characters.')
-        if len(password) > 20:
-            raise ValidationError(
-                'Password cannot have more than 20 characters.')
+        if len(password) < 7:
+            raise ValidationError('Password must have more than 6 characters.')
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
@@ -79,47 +75,26 @@ def abort_if_user_doesnt_exist(id=True):
 
 
 class Register(Resource):
-    def __init__(self):
-        self.parser = reqparse.RequestParser(bundle_errors=True)
-        self.parser.add_argument('username', dest='username',
-                                 location='json',
-                                 required=True, type=str,
-                                 help='The username is required', )
-        self.parser.add_argument('email', dest='email', type=User.valid_email,
-                                 location='json',
-                                 required=True,
-                                 help='The user email is required', )
-        self.parser.add_argument('password', dest='password', 
-                                 type=User.valid_password,
-                                 location='json',
-                                 help='Password must have more than 6 characters',
-                                 required=True)
-        super(Register, self).__init__()
 
-    # @marshal_with(user_fields)
-    def post(self):
-        print("User!")
-        # args = self.parser.parse_args()
-        # print("args: ", args, type(args), dict(args), type(dict(args)))
-
+    @staticmethod
+    def post():
         post_data = json.loads(request.data.decode())
-        print("Request decoded: ", post_data, type(post_data))
+        # print("Request decoded: ", post_data, type(post_data))
         data, error = user_schema.load(post_data)
-        print("\n\n **result args:  ", data, error)
+        # print("\n\n **result args:  ", data, error)
         if error:
-            return error, 400
+            return {"field_errors": error}, 400
         user = User(username=post_data['username'], email=post_data['email'],
                     password=post_data['password'])
         user = user.create_user()
-        # print("USer: ", user)
         if isinstance(user, User):
             user_data, error = user_schema.dump(data)
             print("User_d: ", user_data, error)
             if error:
                 print("Error 2nd: ", error)
-                return error, 400
-            # return jsonify(user), 201
+                return {"errors": error}, 400
             return user_data, 201
-        return {"message": user}
+        return {"error": "An error occurred while creating the user"}
+
 
 api.add_resource(Register, '/register')
