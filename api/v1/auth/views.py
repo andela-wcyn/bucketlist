@@ -1,10 +1,10 @@
 from flask import json
-from flask import request, jsonify
+from flask import request
+from flask_jwt import JWT, jwt_required
 from flask_marshmallow import Marshmallow
-from flask_restful import Api, Resource, reqparse, abort, fields, marshal_with
+from flask_restful import Api, Resource, abort
 from marshmallow import ValidationError
-from marshmallow import post_load
-from marshmallow import fields as mfields
+from marshmallow import fields
 from marshmallow import validates
 
 from api.error_handler import ErrorHandler
@@ -17,10 +17,10 @@ err = ErrorHandler()
 
 
 class UserSchema(ma.Schema):
-    username = mfields.Str(required=True)
-    email = mfields.Email(required=True)
-    password = mfields.Str(required=True, load_only=True,
-                           error_messages={
+    username = fields.Str(required=True)
+    email = fields.Email(required=True)
+    password = fields.Str(required=True, load_only=True,
+                          error_messages={
                                'required': 'Password is required.'})
     # Smart hyperlinking
     _links = ma.Hyperlinks({
@@ -54,22 +54,24 @@ class UserSchema(ma.Schema):
         if len(password) < 7:
             raise ValidationError('Password must have more than 6 characters.')
 
+
+class LoginSchema(ma.Schema):
+    username = fields.Str()
+    email = fields.Email()
+    password = fields.Str(required=True, load_only=True,
+                          error_messages={
+                               'required': 'Password is required.'})
+    # Smart hyperlinking
+    _links = ma.Hyperlinks({
+        'self': ma.URLFor('auth.register'),
+        'collection': ma.URLFor('bucketlists.bucketlists')
+    })
+
+    # @post_load
+    # def make_user(self, data):
+    #     return User(**data)
+
 user_schema = UserSchema()
-users_schema = UserSchema(many=True)
-
-user_fields = {
-    'id':   fields.Integer,
-    'username':   fields.String,
-    'email': fields.String,
-    'uri':    fields.Url('auth.register')
-}
-
-user_list_fields = {
-    'bucketlists':   fields.List(
-        fields.Nested(user_fields)
-    ),
-    'count':   fields.Integer
-}
 
 
 def abort_if_user_doesnt_exist(id=True):
@@ -78,6 +80,7 @@ def abort_if_user_doesnt_exist(id=True):
 
 
 class Register(Resource):
+    # method_decorators = [jwt_required()]
 
     @staticmethod
     def post():
@@ -101,4 +104,27 @@ class Register(Resource):
             "An error occurred while creating the user")
 
 
+class Login(Resource):
+    @staticmethod
+    def post():
+        post_data = json.loads(request.data.decode())
+        user = None
+        if 'email' in post_data:
+            user = User.authenticate(post_data['email'], post_data['password'])
+        elif 'username' in post_data:
+            user = User.authenticate(post_data['username'],
+                                     post_data['password'],
+                                     method='username')
+        # print("Request decoded: ", post_data, type(post_data))
+        if isinstance(user, User):
+            data, error = user_schema.load(user)
+            print("\n\n **result args:  ", data, error)
+            if error:
+                return err.format_field_errors(error)
+            return data, 200
+        else:
+            return err.format_general_errors(
+                "Login failed. {}".format(user))
+
 api.add_resource(Register, '/register')
+api.add_resource(Login, '/login')

@@ -2,6 +2,7 @@ import os
 
 from flask import Flask
 from flask_bcrypt import Bcrypt
+from flask_jwt import JWT
 from flask_sqlalchemy import SQLAlchemy
 
 from api.config import config_by_name
@@ -9,6 +10,7 @@ from api.config import config_by_name
 basedir = os.path.abspath(os.path.dirname(__file__))
 db = SQLAlchemy()
 bcrypt = Bcrypt()
+jwt = JWT()
 
 
 def create_app(config_name):
@@ -17,6 +19,9 @@ def create_app(config_name):
 
     db.init_app(app)
     bcrypt.init_app(app)
+    from api.models import User
+    global jwt
+    jwt = JWT(app, User.authenticate, User.identity)
 
     # Configure version1 blueprint urls
     from api.v1.main import main as main_blueprint
