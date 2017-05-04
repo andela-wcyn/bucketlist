@@ -2,12 +2,16 @@ from datetime import datetime
 
 from flask import json
 from flask import jsonify, request
+from flask_jwt import jwt_required
 from flask_restful import Api, Resource, reqparse, abort, fields, marshal_with
 from flask_marshmallow import Marshmallow
+
+from api.error_handler import ErrorHandler
 from . import bucketlists
 
 api = Api(bucketlists)
-
+ma = Marshmallow(bucketlists)
+err = ErrorHandler()
 
 bucketlist_fields = {
     'id':   fields.Integer,
@@ -29,6 +33,8 @@ def abort_if_bucketlist_doesnt_exist(id=True):
 
 
 class Bucketlists(Resource):
+    method_decorators = [jwt_required()]
+
     def __init__(self):
         self.parser = reqparse.RequestParser(bundle_errors=True)
         self.parser.add_argument('description', type=str,

@@ -8,6 +8,16 @@ from werkzeug.security import safe_str_cmp
 from api import db, bcrypt
 # from api.v1.auth import auth
 
+class UserToken(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(300))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False,
+                     unique=True)
+
+    def __repr__(self):
+        return "<User Token '{}': '{}'".format(
+            self.user, self.token)
+
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -25,7 +35,7 @@ class User(db.Model):
     def password(self, plaintext):
         print("\n\n ^^^ Plaintext: ", plaintext)
         self._password = bcrypt.generate_password_hash(plaintext).decode()
-        print("\n\n ^^^ Password creted: ", self._password)
+        print("\n\n ^^^ Password created: ", self._password)
 
     @staticmethod
     def valid_email(email_str):
@@ -102,11 +112,8 @@ class User(db.Model):
             'iat': datetime.utcnow(),
             'nbf': datetime.utcnow()
         }, secret_key, algorithm='HS256')
-
-        print("\n\n Token!: ", token)
-
         if token:
-            return token
+            return token.decode()
         return None
     #
     # @staticmethod
@@ -178,15 +185,4 @@ class BucketlistItem(db.Model):
     def __repr__(self):
         return "<Bucketlist Item '{}': '{}'".format(
             self.description, self.bucketlist_id)
-
-
-class UserToken(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    token = db.Column(db.String(300), unique=True)
-    user = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False,
-                     unique=True)
-
-    def __repr__(self):
-        return "<User Token '{}': '{}'".format(
-            self.user, self.token)
 

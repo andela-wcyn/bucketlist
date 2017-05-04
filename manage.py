@@ -22,7 +22,6 @@ def initdb():
     bucketlist = Bucketlist(description="My Bucketlist", user=user1)
     bucketlist_item = BucketlistItem(description="An item",
                                      bucketlist=bucketlist)
-    print("db: ", db)
     # db.session.add(user1)
     # db.session.add(user2)
     # db.session.add(bucketlist)
