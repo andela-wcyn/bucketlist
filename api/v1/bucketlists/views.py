@@ -4,7 +4,6 @@ from flask import json
 from flask import jsonify, request
 from flask_restful import Api, Resource, reqparse, abort, fields, marshal_with
 from flask_marshmallow import Marshmallow
-from api.v1.main.views import InvalidFieldException
 from . import bucketlists
 
 api = Api(bucketlists)
@@ -97,7 +96,7 @@ class BucketlistDetails(Resource):
         # self.parser.add_argument('key1', type=str)
         # self.parser.add_argument('key2', type=str)
         # abort_if_bucketlist_doesnt_exist(id)
-        id = {'id': args['id']}
+        id = {'id': kwargs['id']}
         print("Putting!", id)
         data = json.loads(request.data)
         print("Data now! ", data)

@@ -1,6 +1,5 @@
 from flask import jsonify
 
-from api.exceptions import InvalidFieldException, InvalidDataException
 from . import main
 
 
@@ -41,21 +40,3 @@ def internal_server_error(e):
         "message": "Internal Server Error"
     }
     return jsonify(data), 500
-
-
-@main.app_errorhandler(InvalidFieldException)
-def not_found(e):
-    data = {
-        "error": "400",
-        "message": "Invalid Field"
-    }
-    return jsonify(data), 400
-
-
-@main.app_errorhandler(InvalidDataException)
-def not_found(e):
-    data = {
-        "error": "400",
-        "message": "Invalid Data"
-    }
-    return jsonify(data), 400

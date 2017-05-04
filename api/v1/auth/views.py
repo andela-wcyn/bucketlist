@@ -7,11 +7,14 @@ from marshmallow import post_load
 from marshmallow import fields as mfields
 from marshmallow import validates
 
+from api.error_handler import ErrorHandler
 from api.models import User
 from . import auth
 
 api = Api(auth)
 ma = Marshmallow(auth)
+err = ErrorHandler()
+
 
 class UserSchema(ma.Schema):
     username = mfields.Str(required=True)
@@ -83,7 +86,7 @@ class Register(Resource):
         data, error = user_schema.load(post_data)
         # print("\n\n **result args:  ", data, error)
         if error:
-            return {"field_errors": error}, 400
+            return err.format_field_errors(error)
         user = User(username=post_data['username'], email=post_data['email'],
                     password=post_data['password'])
         user = user.create_user()
@@ -92,9 +95,10 @@ class Register(Resource):
             print("User_d: ", user_data, error)
             if error:
                 print("Error 2nd: ", error)
-                return {"errors": error}, 400
+                return err.format_field_errors(error)
             return user_data, 201
-        return {"error": "An error occurred while creating the user"}
+        return err.format_general_errors(
+            "An error occurred while creating the user")
 
 
 api.add_resource(Register, '/register')
