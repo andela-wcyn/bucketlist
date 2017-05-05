@@ -92,7 +92,7 @@ class Register(Resource):
             user_data, error = user_schema.dump(data)
             print("User_d: ", user_data, error)
             if error:
-                print("Error 2nd: ", error)
+                print("Error: ", error)
                 return err.format_field_errors(error)
             return user_data, 201
         return err.format_general_errors(

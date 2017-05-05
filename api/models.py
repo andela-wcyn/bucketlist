@@ -108,7 +108,7 @@ class User(db.Model):
         """
         token = jwt.encode({
             'id': self.id,
-            'exp': datetime.utcnow() + timedelta(seconds=30),
+            'exp': datetime.utcnow() + timedelta(seconds=expiration),
             'iat': datetime.utcnow(),
             'nbf': datetime.utcnow()
         }, secret_key, algorithm='HS256')
@@ -118,7 +118,6 @@ class User(db.Model):
 
     @staticmethod
     def authenticate(identifier, password, method='email'):
-        print("\n\n &&& Authenticating...")
         if method == 'email':
             user = User.query.filter_by(email=identifier).first()
         elif method == 'username':
@@ -153,7 +152,20 @@ class Bucketlist(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
-        return "<Bucketlist '{}': '{}'>".format(self.description, self.user_id)
+        return "<Bucketlist '{}': '{}'>".format(self.description, self.user.id)
+
+    def validate_bucketlist(self):
+        if len(self.description) > 100:
+            return False
+        else:
+            return self
+
+    def create_bucketlist(self):
+        valid_bucketlist = self.validate_bucketlist()
+        if isinstance(valid_bucketlist, Bucketlist):
+            db.session.add(self)
+            db.session.commit()
+        return valid_bucketlist
 
 
 class BucketlistItem(db.Model):

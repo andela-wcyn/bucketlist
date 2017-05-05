@@ -5,40 +5,37 @@ from flask_restful import Api, Resource, reqparse, abort, marshal_with
 from flask_marshmallow import Marshmallow
 from marshmallow import ValidationError, validates
 from marshmallow import fields
+from marshmallow import post_dump
+from marshmallow import post_load
+from marshmallow import pre_dump
+from marshmallow import pre_load
 
 from api.error_formatter import ErrorFormatter
-from api.models import Bucketlist
-from api.v1.auth.views import UserSchema
+from api.models import Bucketlist, User
+from api.v1.auth.views import UserSchema, user_schema
 from . import bucketlists
 
 api = Api(bucketlists)
 ma = Marshmallow(bucketlists)
 err = ErrorFormatter()
 
-# bucketlist_fields = {
-#     'id':   fields.Integer,
-#     'description':   fields.String,
-#     'uri':    fields.Url('bucketlists.bucketlistdetails')
-# }
-#
-# bucketlist_list_fields = {
-#     'bucketlists':   fields.List(
-#         fields.Nested(bucketlist_fields)
-#     ),
-#     'count':   fields.Integer
-# }
 
 class BucketlistItemSchema(ma.Schema):
+    """
+    Schema used to validate and serialize bucketlist item data
+    """
     id = fields.Integer(required=True)
     description = fields.Str(required=True,
                              error_messages={
                                'required': 'Description is required.'})
-    user = fields.Nested(UserSchema, exclude=('password',), dump_only=True)
+    user = fields.Nested(UserSchema, exclude=('password', '_links'),
+                         dump_only=True)
+    bucketlist = fields.Int(required=True, load_only=True)
     # Smart hyperlinking
     _links = ma.Hyperlinks({
-        'self': ma.URLFor('bucketlists.bucketlists', id='<id>',
-                          item_id='<item_id>'),
-        'collection': ma.URLFor('bucketlists.bucketlists', id='<id>')
+        'self': str(ma.URLFor('bucketlists.bucketlists')) + str(id),
+        'collection': str(ma.URLFor('bucketlists.bucketlists')) + str(
+            bucketlist) + "/" + str(id)
     })
 
     @validates('description')
@@ -47,22 +44,41 @@ class BucketlistItemSchema(ma.Schema):
             raise ValidationError(
                 'Description cannot have more than 300 characters.')
 
+    @pre_dump
+    def process_bucketlist(self, data):
+        print("\n\n &&&&  Postload data: : ", data)
+        bucketlist = Bucketlist.query.filter_by(
+            bucketlist_id=data['bucketlist']).first()
+        if bucketlist:
+            print("\n\n%%% Bucketlist stuff ", bucketlist)
+            data['bucketlist'] = jsonify(bucketlist).decode()
+            return data
+        else:
+            return err.format_general_errors("Bucketlist Does not Exist")
+
+    # @pre_load(self)
     # @post_load
     # def make_user(self, data):
     #     return User(**data)
 
 
 class BucketlistSchema(ma.Schema):
-    id = fields.Integer(required=True)
+    """
+    Schema used to validate and serialize bucketlist data
+    """
+    id = fields.Integer(required=True, dump_only=True)
     description = fields.Str(required=True,
                              error_messages={
                                'required': 'Description is required.'})
-    user = fields.Nested(UserSchema, exclude=('password',), dump_only=True)
+    user = fields.Nested(UserSchema, exclude=('password', '_links'),
+                         dump_only=True, required=True)
     items = fields.Nested(BucketlistItemSchema, many=True)
     _links = ma.Hyperlinks({
         'self': ma.URLFor('bucketlists.bucketlists', id='<id>'),
         'collection': ma.URLFor('bucketlists.bucketlists')
     })
+    # url = ma.URLFor('bucketlists.bucketlists', id='<id>')
+    # print("Link: ", url.__dict__, type(url))
     # @post_load
     # def make_user(self, data):
     #     return User(**data)
@@ -73,6 +89,11 @@ class BucketlistSchema(ma.Schema):
             raise ValidationError(
                 'Description cannot have more than 100 characters.')
 
+    @post_dump
+    def fix_bucket_link(self, data):
+        print("Predump!!", data)
+        data['_links']['self'] = data['_links']['collection'] + str(data['id'])
+        return data
 
 bucketlist_schema = BucketlistSchema()
 bucketlists_schema = BucketlistSchema(many=True)
@@ -89,19 +110,39 @@ class Bucketlists(Resource):
     method_decorators = [jwt_required()]
 
     def get(self):
-        print("Current Identity: ", current_identity)
         bucket_lists = Bucketlist.query.filter_by(
             user=current_identity).all()
         print("Bucketlists: ", bucket_lists)
         return bucketlists_schema.dump(bucket_lists)
 
     def post(self):
-        args = self.parser.parse_args()
-        # Convert the datetime object back into a string
-        args['date'] = args['date'].strftime('%Y-%m-%dT%H:%M:%S')
-        print("bucket args: ", args)
-        # user = User(username=args['username'], )
-        return args, 201
+        post_data = json.loads(request.data.decode())
+        print("Request decoded: ", post_data, type(post_data))
+        data, error = bucketlist_schema.load(post_data)
+        if error:
+            return err.format_field_errors(error)
+        bucketlist = Bucketlist(description=post_data['description'],
+                                user=current_identity)
+        bucketlist = bucketlist.create_bucketlist()
+        print("\n\n New Bucketlist!", bucketlist.__dict__)
+        if isinstance(bucketlist, Bucketlist):
+            print("\n\n New Bucketlist 2!", bucketlist)
+            # data.update = 
+            user_data, error = user_schema.dump(bucketlist.user)
+            if error:
+                return err.format_field_errors(error)
+            user = {'user': user_data}
+            bucketlist_data = bucketlist.__dict__
+            bucketlist_data.update(user)
+            print("\n\n Data", bucketlist_data)
+            # print("\n\n Data id", bucketlist.id)
+            bucketlist_data, error = bucketlist_schema.dump(bucketlist)
+            if error:
+                print("Error 2nd: ", error)
+                return err.format_field_errors(error)
+            return bucketlist_data, 201
+        return err.format_general_errors(
+            "An error occurred while creating the bucketlist")
 
 
 class BucketlistDetails(Resource):
