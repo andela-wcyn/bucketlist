@@ -11,7 +11,7 @@ from marshmallow import pre_dump
 from marshmallow import pre_load
 
 from api.message_formatter import ErrorFormatter
-from api.models import Bucketlist, User
+from api.models import Bucketlist, User, BucketlistItem
 from api.v1.auth.views import UserSchema, user_schema
 from . import bucketlists
 
@@ -26,48 +26,11 @@ def abort_if_bucketlist_doesnt_exist(bucketlist_id):
     if not bucketlist:
         abort(404, message="Bucketlist '{}' doesn't exist".format(
             bucketlist_id))
+    elif bucketlist.user != current_identity:
+            abort(403, message="Forbidden. You may not view this "
+                               "bucketlist")
     else:
         return bucketlist
-
-
-class BucketlistItemSchema(ma.Schema):
-    """
-    Schema used to validate and serialize bucketlist item data
-    """
-    id = fields.Integer(required=True)
-    description = fields.Str(required=True,
-                             error_messages={
-                               'required': 'Description is required.'})
-    bucketlist_id = fields.Int(required=True, load_only=True)
-    # Smart hyperlinking
-    _links = ma.Hyperlinks({
-        'self': ma.URLFor('bucketlists.bucketlists', id='<id>'),
-        'collection': ma.URLFor('bucketlists.bucketlists', id='<id>',
-                                item_id='<item_id>')
-    })
-
-    @validates('description')
-    def validate_description(self, description):
-        if len(description) > 300:
-            raise ValidationError(
-                'Description cannot have more than 300 characters.')
-
-    @pre_dump
-    def process_bucketlist(self, data):
-        print("\n\n &&&&  Postload data: : ", data)
-        bucketlist = Bucketlist.query.filter_by(
-            bucketlist_id=data['bucketlist']).first()
-        if bucketlist:
-            print("\n\n%%% Bucketlist stuff ", bucketlist)
-            data['bucketlist'] = jsonify(bucketlist).decode()
-            return data
-        else:
-            return msg.format_general_errors("Bucketlist Does not Exist")
-
-    # @pre_load(self)
-    # @post_load
-    # def make_user(self, data):
-    #     return User(**data)
 
 
 class BucketlistSchema(ma.Schema):
@@ -110,6 +73,34 @@ class BucketlistSchema(ma.Schema):
         return data
 
 
+class BucketlistItemSchema(ma.Schema):
+    """
+    Schema used to validate and serialize bucketlist item data
+    """
+    id = fields.Integer(required=True)
+    description = fields.Str(required=True,
+                             error_messages={
+                               'required': 'Description is required.'})
+    bucketlist = fields.Nested(BucketlistSchema, dump_only=True, required=True)
+    # Smart hyperlinking
+    _links = ma.Hyperlinks({
+        'self': ma.URLFor('bucketlists.bucketlists', id='<id>'),
+        'collection': ma.URLFor('bucketlists.bucketlists', id='<id>',
+                                item_id='<item_id>')
+    })
+
+    @validates('description')
+    def validate_description(self, description):
+        if len(description) > 300:
+            raise ValidationError(
+                'Description cannot have more than 300 characters.')
+
+    # @pre_load(self)
+    # @post_load
+    # def make_user(self, data):
+    #     return User(**data)
+
+
 class BucketlistDetailsSchema(BucketlistSchema):
     items = fields.Nested(BucketlistItemSchema, many=True)
 
@@ -125,12 +116,22 @@ class Bucketlists(Resource):
 
     @staticmethod
     def get():
+        """
+        Get a list of bucketlists from the database
+        :return:
+        :rtype:
+        """
         bucket_lists = Bucketlist.query.filter_by(
             user=current_identity).all()
         return bucketlists_schema.dump(bucket_lists)
 
     @staticmethod
     def post():
+        """
+        Add a new bucketlist to the database
+        :return:
+        :rtype:
+        """
         post_data = json.loads(request.data.decode())
         # print("Request decoded two: ", post_data, type(post_data))
         bucketlist, error = bucketlist_schema.load(post_data)
@@ -152,18 +153,25 @@ class BucketlistDetails(Resource):
 
     @staticmethod
     def get(id):
+        """
+        Get the bucketlist with the specified id
+        :param id: Bucketlist id from url
+        :type id: integer
+        :return: Data containing the updated bucketlist or an error message
+        :rtype: JSON
+        """
         bucketlist = abort_if_bucketlist_doesnt_exist(id)
         return bucketlist_details_schema.dump(bucketlist)
 
     @staticmethod
-    def delete(id):
-        bucketlist = abort_if_bucketlist_doesnt_exist(id)
-        bucketlist.delete_bucketlist()
-        return msg.format_success_message(
-            "Bucketlist successfully deleted", 200)
-
-    @staticmethod
     def put(id):
+        """
+        Update the bucketlist with the specified id
+        :param id: Bucketlist id from url
+        :type id: integer
+        :return: Data containing the updated bucketlist or an error message
+        :rtype: JSON
+        """
         bucketlist = abort_if_bucketlist_doesnt_exist(id)
         put_data = json.loads(request.data.decode())
         put_data['id'] = id
@@ -183,28 +191,76 @@ class BucketlistDetails(Resource):
         return msg.format_general_errors(
             "An error occurred while updating the bucketlist")
 
+    @staticmethod
+    def post(id):
+        """
+        Add a new Bucketlist Item to the bucketlist with specified id to the
+        database
+        :param id: Bucketlist id from url
+        :type id: integer
+        :return: Data containing the newly created bucketlist item or an
+        error message
+        :rtype: JSON
+        """
+        post_data = json.loads(request.data.decode())
+        # print("Request decoded two: ", post_data, type(post_data))
+        bucketlist, error = bucketlist_schema.load(post_data)
+        print("bucketlist: ", bucketlist.__dict__)
+        if error:
+            return msg.format_field_errors(error)
+        bucketlist = bucketlist.create_bucketlist()
+        if isinstance(bucketlist, Bucketlist):
+            bucketlist_data, error = bucketlist_schema.dump(bucketlist)
+            if error:
+                return msg.format_field_errors(error)
+            return bucketlist_data, 201
+        return msg.format_general_errors(
+            "An error occurred while creating the bucketlist")
+
+    @staticmethod
+    def delete(id):
+        bucketlist = abort_if_bucketlist_doesnt_exist(id)
+        bucketlist.delete_bucketlist()
+        return msg.format_success_message(
+            "Bucketlist successfully deleted", 200)
+
 
 class BucketlistItemDetails(Resource):
-    def __init__(self):
-        self.parser = reqparse.RequestParser()
-        super(BucketlistItemDetails, self).__init__()
+    method_decorators = [jwt_required()]
 
-    def get(self, id):
-        abort_if_bucketlist_doesnt_exist(1)
-        return None
+    @staticmethod
+    def get(id, item_id):
+        bucketlist = abort_if_bucketlist_doesnt_exist(id)
+        bucket_list_items = BucketlistItem.query.filter_by(
+            bucketlist_id=id).all()
+        return bucketlist_items_schema.dump(bucket_list_items)
 
-    def delete(self, **kwargs):
+    @staticmethod
+    def put(id, item_id):
+        bucketlist = abort_if_bucketlist_doesnt_exist(id)
+        put_data = json.loads(request.data.decode())
+        put_data['id'] = id
+        data, error = bucketlist_schema.dump(put_data)
+        print("Data from put: ", data)
+        if error:
+            return msg.format_field_errors(error)
+        for key, value in data.items():
+            if key in bucketlist_schema.editable_fields():
+                setattr(bucketlist, key, value)
+        bucketlist = bucketlist.update_bucketlist()
+        if isinstance(bucketlist, Bucketlist):
+            bucketlist_data, error = bucketlist_schema.dump(bucketlist)
+            if error:
+                return msg.format_field_errors(error)
+            return bucketlist_data, 201
+        return msg.format_general_errors(
+            "An error occurred while updating the bucketlist")
+
+    @staticmethod
+    def delete(**kwargs):
         print("DELETE ID!: ", kwargs)
         abort_if_bucketlist_doesnt_exist(kwargs['id'])
         return '', 204
-
-    def put(self, **kwargs):
-        abort_if_bucketlist_doesnt_exist(id)
-        id = {'id': kwargs['id']}
-        print("Putting!", id)
-        data = json.loads(request.data)
-        print("Data now! ", data)
-        return data
 
 api.add_resource(Bucketlists, '/')
 api.add_resource(BucketlistDetails, '/<int:id>')
