@@ -84,12 +84,17 @@ class BucketlistSchema(ma.Schema):
     _links = ma.Hyperlinks({
         'self': ma.URLFor('bucketlists.bucketlists', id='<id>'),
         'collection': ma.URLFor('bucketlists.bucketlists')
-    })
-    # url = ma.URLFor('bucketlists.bucketlists', id='<id>')
-    # print("Link: ", url.__dict__, type(url))
-    # @post_load
-    # def make_user(self, data):
-    #     return User(**data)
+    }, dump_only=True)
+
+    @staticmethod
+    def editable_fields():
+        return ['description']
+
+    @post_load
+    def make_bucketlist(self, data):
+        print("Post load bucketlist: ", data)
+        data['user'] = current_identity
+        return Bucketlist(**data)
 
     @validates('description')
     def validate_description(self, description):
@@ -118,19 +123,20 @@ bucketlist_items_schema = BucketlistItemSchema(many=True)
 class Bucketlists(Resource):
     method_decorators = [jwt_required()]
 
-    def get(self):
+    @staticmethod
+    def get():
         bucket_lists = Bucketlist.query.filter_by(
             user=current_identity).all()
         return bucketlists_schema.dump(bucket_lists)
 
-    def post(self):
+    @staticmethod
+    def post():
         post_data = json.loads(request.data.decode())
-        print("Request decoded: ", post_data, type(post_data))
-        data, error = bucketlist_schema.load(post_data)
+        # print("Request decoded two: ", post_data, type(post_data))
+        bucketlist, error = bucketlist_schema.load(post_data)
+        print("bucketlist: ", bucketlist.__dict__)
         if error:
             return msg.format_field_errors(error)
-        bucketlist = Bucketlist(description=post_data['description'],
-                                user=current_identity)
         bucketlist = bucketlist.create_bucketlist()
         if isinstance(bucketlist, Bucketlist):
             bucketlist_data, error = bucketlist_schema.dump(bucketlist)
@@ -142,29 +148,40 @@ class Bucketlists(Resource):
 
 
 class BucketlistDetails(Resource):
-    def __init__(self):
-        self.parser = reqparse.RequestParser()
-        super(BucketlistDetails, self).__init__()
+    method_decorators = [jwt_required()]
 
-    def get(self, id):
+    @staticmethod
+    def get(id):
         bucketlist = abort_if_bucketlist_doesnt_exist(id)
-        bucketlist = bucketlist_details_schema.dump(bucketlist)
-        return bucketlist
-        # abort_if_bucketlist_doesnt_exist(1)
-        # return data
+        return bucketlist_details_schema.dump(bucketlist)
 
-    def delete(self, id):
+    @staticmethod
+    def delete(id):
         bucketlist = abort_if_bucketlist_doesnt_exist(id)
         bucketlist.delete_bucketlist()
         return msg.format_success_message(
             "Bucketlist successfully deleted", 200)
 
-    def put(self, id):
+    @staticmethod
+    def put(id):
         bucketlist = abort_if_bucketlist_doesnt_exist(id)
-        print("Putting!", id)
-        data = json.loads(request.data)
-        print("Data now! ", data)
-        return data
+        put_data = json.loads(request.data.decode())
+        put_data['id'] = id
+        data, error = bucketlist_schema.dump(put_data)
+        print("Data from put: ", data)
+        if error:
+            return msg.format_field_errors(error)
+        for key, value in data.items():
+            if key in bucketlist_schema.editable_fields():
+                setattr(bucketlist, key, value)
+        bucketlist = bucketlist.update_bucketlist()
+        if isinstance(bucketlist, Bucketlist):
+            bucketlist_data, error = bucketlist_schema.dump(bucketlist)
+            if error:
+                return msg.format_field_errors(error)
+            return bucketlist_data, 201
+        return msg.format_general_errors(
+            "An error occurred while updating the bucketlist")
 
 
 class BucketlistItemDetails(Resource):

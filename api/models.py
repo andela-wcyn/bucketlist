@@ -96,7 +96,7 @@ class User(db.Model):
             db.session.commit()
         return valid_user
 
-    def generate_auth_token(self, secret_key, expiration=3000):
+    def generate_auth_token(self, secret_key, expiration=30000):
         """
         Generate the JWT token used to authenticate the user
         :param secret_key:
@@ -165,6 +165,15 @@ class Bucketlist(db.Model):
         if isinstance(valid_bucketlist, Bucketlist):
             db.session.add(self)
             db.session.commit()
+        return valid_bucketlist
+
+    def update_bucketlist(self):
+        valid_bucketlist = self.validate_bucketlist()
+        if isinstance(valid_bucketlist, Bucketlist):
+            print("\n\n Valid bucketlist? ", valid_bucketlist.__dict__)
+            # db.session.add(self)
+            db.session.commit()
+        print("\n\n Valid bucketlist2 ? ", valid_bucketlist.__dict__)
         return valid_bucketlist
 
     def delete_bucketlist(self):
