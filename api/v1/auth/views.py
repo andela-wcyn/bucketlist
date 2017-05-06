@@ -7,7 +7,7 @@ from marshmallow import ValidationError
 from marshmallow import fields
 from marshmallow import validates
 
-from api.error_formatter import ErrorFormatter
+from api.message_formatter import ErrorFormatter
 from api.models import User
 from . import auth
 

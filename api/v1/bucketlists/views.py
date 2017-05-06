@@ -10,14 +10,24 @@ from marshmallow import post_load
 from marshmallow import pre_dump
 from marshmallow import pre_load
 
-from api.error_formatter import ErrorFormatter
+from api.message_formatter import ErrorFormatter
 from api.models import Bucketlist, User
 from api.v1.auth.views import UserSchema, user_schema
 from . import bucketlists
 
 api = Api(bucketlists)
 ma = Marshmallow(bucketlists)
-err = ErrorFormatter()
+msg = ErrorFormatter()
+
+
+def abort_if_bucketlist_doesnt_exist(bucketlist_id):
+    bucketlist = Bucketlist.query.filter_by(
+        id=bucketlist_id).first()
+    if not bucketlist:
+        abort(404, message="Bucketlist '{}' doesn't exist".format(
+            bucketlist_id))
+    else:
+        return bucketlist
 
 
 class BucketlistItemSchema(ma.Schema):
@@ -28,14 +38,12 @@ class BucketlistItemSchema(ma.Schema):
     description = fields.Str(required=True,
                              error_messages={
                                'required': 'Description is required.'})
-    user = fields.Nested(UserSchema, exclude=('password', '_links'),
-                         dump_only=True)
-    bucketlist = fields.Int(required=True, load_only=True)
+    bucketlist_id = fields.Int(required=True, load_only=True)
     # Smart hyperlinking
     _links = ma.Hyperlinks({
-        'self': str(ma.URLFor('bucketlists.bucketlists')) + str(id),
-        'collection': str(ma.URLFor('bucketlists.bucketlists')) + str(
-            bucketlist) + "/" + str(id)
+        'self': ma.URLFor('bucketlists.bucketlists', id='<id>'),
+        'collection': ma.URLFor('bucketlists.bucketlists', id='<id>',
+                                item_id='<item_id>')
     })
 
     @validates('description')
@@ -54,7 +62,7 @@ class BucketlistItemSchema(ma.Schema):
             data['bucketlist'] = jsonify(bucketlist).decode()
             return data
         else:
-            return err.format_general_errors("Bucketlist Does not Exist")
+            return msg.format_general_errors("Bucketlist Does not Exist")
 
     # @pre_load(self)
     # @post_load
@@ -70,9 +78,9 @@ class BucketlistSchema(ma.Schema):
     description = fields.Str(required=True,
                              error_messages={
                                'required': 'Description is required.'})
-    user = fields.Nested(UserSchema, exclude=('password', '_links'),
+    user = fields.Nested(UserSchema, exclude=('password', '_links', 'email'),
                          dump_only=True, required=True)
-    items = fields.Nested(BucketlistItemSchema, many=True)
+    item_count = fields.Function(lambda obj: obj.get_item_count())
     _links = ma.Hyperlinks({
         'self': ma.URLFor('bucketlists.bucketlists', id='<id>'),
         'collection': ma.URLFor('bucketlists.bucketlists')
@@ -91,19 +99,20 @@ class BucketlistSchema(ma.Schema):
 
     @post_dump
     def fix_bucket_link(self, data):
-        print("Predump!!", data)
+        # print("Predump!!", data)
+        # data['item_count'] = len(data['items'])
         data['_links']['self'] = data['_links']['collection'] + str(data['id'])
         return data
 
+
+class BucketlistDetailsSchema(BucketlistSchema):
+    items = fields.Nested(BucketlistItemSchema, many=True)
+
 bucketlist_schema = BucketlistSchema()
 bucketlists_schema = BucketlistSchema(many=True)
+bucketlist_details_schema = BucketlistDetailsSchema()
 bucketlist_item_schema = BucketlistItemSchema()
 bucketlist_items_schema = BucketlistItemSchema(many=True)
-
-
-def abort_if_bucketlist_doesnt_exist(id=True):
-    if not id:
-        abort(404, message="Bucketlist '{}' doesn't exist".format(id))
 
 
 class Bucketlists(Resource):
@@ -112,7 +121,6 @@ class Bucketlists(Resource):
     def get(self):
         bucket_lists = Bucketlist.query.filter_by(
             user=current_identity).all()
-        print("Bucketlists: ", bucket_lists)
         return bucketlists_schema.dump(bucket_lists)
 
     def post(self):
@@ -120,28 +128,16 @@ class Bucketlists(Resource):
         print("Request decoded: ", post_data, type(post_data))
         data, error = bucketlist_schema.load(post_data)
         if error:
-            return err.format_field_errors(error)
+            return msg.format_field_errors(error)
         bucketlist = Bucketlist(description=post_data['description'],
                                 user=current_identity)
         bucketlist = bucketlist.create_bucketlist()
-        print("\n\n New Bucketlist!", bucketlist.__dict__)
         if isinstance(bucketlist, Bucketlist):
-            print("\n\n New Bucketlist 2!", bucketlist)
-            # data.update = 
-            user_data, error = user_schema.dump(bucketlist.user)
-            if error:
-                return err.format_field_errors(error)
-            user = {'user': user_data}
-            bucketlist_data = bucketlist.__dict__
-            bucketlist_data.update(user)
-            print("\n\n Data", bucketlist_data)
-            # print("\n\n Data id", bucketlist.id)
             bucketlist_data, error = bucketlist_schema.dump(bucketlist)
             if error:
-                print("Error 2nd: ", error)
-                return err.format_field_errors(error)
+                return msg.format_field_errors(error)
             return bucketlist_data, 201
-        return err.format_general_errors(
+        return msg.format_general_errors(
             "An error occurred while creating the bucketlist")
 
 
@@ -150,35 +146,21 @@ class BucketlistDetails(Resource):
         self.parser = reqparse.RequestParser()
         super(BucketlistDetails, self).__init__()
 
-    # @marshal_with(bucketlist_fields)
     def get(self, id):
-        data = {
-            "id": id,
-            "description": "best day ever yay!",
-            "color": "Hue"
-        }
-        # print("KWARGS: ", kwargs)
-        args = self.parser.parse_args()
-        print("ARGS:;;: ", args)
-        # self.parser.add_argument('key1', type=str)
-        # self.parser.add_arguments('key2', type=str)
-
-        return data
+        bucketlist = abort_if_bucketlist_doesnt_exist(id)
+        bucketlist = bucketlist_details_schema.dump(bucketlist)
+        return bucketlist
         # abort_if_bucketlist_doesnt_exist(1)
         # return data
 
-    def delete(self, **kwargs):
-        print("DELETE ID!: ", kwargs)
-        abort_if_bucketlist_doesnt_exist(kwargs['id'])
-        return '', 204
+    def delete(self, id):
+        bucketlist = abort_if_bucketlist_doesnt_exist(id)
+        bucketlist.delete_bucketlist()
+        return msg.format_success_message(
+            "Bucketlist successfully deleted", 200)
 
-    # @marshal_with(bucketlist_fields)
-    def put(self, **kwargs):
-        # print("ARGS: ", id)
-        # self.parser.add_argument('key1', type=str)
-        # self.parser.add_argument('key2', type=str)
-        # abort_if_bucketlist_doesnt_exist(id)
-        id = {'id': kwargs['id']}
+    def put(self, id):
+        bucketlist = abort_if_bucketlist_doesnt_exist(id)
         print("Putting!", id)
         data = json.loads(request.data)
         print("Data now! ", data)
@@ -190,34 +172,17 @@ class BucketlistItemDetails(Resource):
         self.parser = reqparse.RequestParser()
         super(BucketlistItemDetails, self).__init__()
 
-    # @marshal_with(bucketlist_fields)
     def get(self, id):
-        data = {
-            "id": id,
-            "description": "best day ever yay!",
-            "color": "Hue"
-        }
-        # print("KWARGS: ", kwargs)
-        args = self.parser.parse_args()
-        print("ARGS:;;: ", args)
-        # self.parser.add_argument('key1', type=str)
-        # self.parser.add_arguments('key2', type=str)
-
-        return data
-        # abort_if_bucketlist_doesnt_exist(1)
-        # return data
+        abort_if_bucketlist_doesnt_exist(1)
+        return None
 
     def delete(self, **kwargs):
         print("DELETE ID!: ", kwargs)
         abort_if_bucketlist_doesnt_exist(kwargs['id'])
         return '', 204
 
-    # @marshal_with(bucketlist_fields)
     def put(self, **kwargs):
-        # print("ARGS: ", id)
-        # self.parser.add_argument('key1', type=str)
-        # self.parser.add_argument('key2', type=str)
-        # abort_if_bucketlist_doesnt_exist(id)
+        abort_if_bucketlist_doesnt_exist(id)
         id = {'id': kwargs['id']}
         print("Putting!", id)
         data = json.loads(request.data)
@@ -227,46 +192,3 @@ class BucketlistItemDetails(Resource):
 api.add_resource(Bucketlists, '/')
 api.add_resource(BucketlistDetails, '/<int:id>')
 api.add_resource(BucketlistItemDetails, '/<int:id>/<int:item_id>')
-
-# @bucketlists.route('/', methods=['POST', 'GET'])
-# def all_bucketlists():
-#
-#     data = [{
-#         "text": "Bucketlist 1",
-#         "color": "blue"
-#     },
-#         {
-#         "text": "Bucketlist 2",
-#         "color": "red"
-#     }]
-#
-#     return jsonify(data)
-#
-#
-# @bucketlists.route('/<id>', methods=['POST', 'GET', 'PUT'])
-# def bucketlist(id):
-#     data = {
-#         "text": "Bucketlist 1",
-#         "id": int(id)
-#     }
-#     return jsonify(data)
-#
-#
-# @bucketlists.route('/<id>/items', methods=['POST', 'GET'])
-# def bucketlist_items(id):
-#     data = [{
-#         "text": "Bucketlist Item",
-#         "bucketlist": 1,
-#         "id": int(id)
-#     }]
-#     return jsonify(data)
-#
-#
-# @bucketlists.route('/<id>/items/<item_id>', methods=['POST', 'GET'])
-# def bucketlist_item(id, item_id):
-#     data = [{
-#         "text": "Bucketlist Item",
-#         "bucketlist": 1,
-#         "id": int(id)
-#     }]
-#     return jsonify(data)

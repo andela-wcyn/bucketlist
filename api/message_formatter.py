@@ -8,3 +8,7 @@ class ErrorFormatter(object):
     def format_general_errors(errors):
         # Internal Server error
         return {"errors": errors}, 500
+
+    @staticmethod
+    def format_success_message(message, status):
+        return {"message": message}, status

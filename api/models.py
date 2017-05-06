@@ -167,6 +167,13 @@ class Bucketlist(db.Model):
             db.session.commit()
         return valid_bucketlist
 
+    def delete_bucketlist(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def get_item_count(self):
+        return self.items.count()
+
 
 class BucketlistItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
