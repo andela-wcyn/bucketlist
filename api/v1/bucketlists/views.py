@@ -11,8 +11,8 @@ from marshmallow import pre_dump
 from marshmallow import pre_load
 
 from api.message_formatter import ErrorFormatter
-from api.models import Bucketlist, User, BucketlistItem
-from api.v1.auth.views import UserSchema, user_schema
+from api.models import Bucketlist, BucketlistItem, Tag
+from api.v1.auth.views import UserSchema
 from . import bucketlists
 
 api = Api(bucketlists)
@@ -43,6 +43,16 @@ def abort_if_bucketlist_item_doesnt_exist(bucketlist_item_id):
         ))
     elif check_user_permission(bucketlist_item.bucketlist.user):
         return bucketlist_item
+
+
+def abort_if_tag_doesnt_exist(tag_id):
+    tag = Tag.get_tag(tag_id)
+    if not tag:
+        abort(404, message="Tag '{}' does not exist".format(
+            tag_id
+        ))
+    elif check_user_permission(tag.bucketlist.user):
+        return tag
 
 
 class BucketlistSchema(ma.Schema):
@@ -79,13 +89,6 @@ class BucketlistSchema(ma.Schema):
         elif len(description) < 1:
             raise ValidationError(
                 'Description cannot be empty.')
-    # @pre_dump
-    # def check_exists_and_permission(self, data):
-    #     print("Predump!!", data)
-    #     abort_if_bucketlist_doesnt_exist(data.id)
-    #     # # data['item_count'] = len(data['items'])
-    #     # data['_links']['self'] = data['_links']['collection'] + str(data['id'])
-    #     return data
 
     @post_dump
     def fix_bucket_link(self, data):
@@ -125,10 +128,11 @@ class BucketlistItemSchema(ma.Schema):
 
     @post_dump
     def fix_bucket_item_link(self, data):
-        data['_links']['collection'] = '/'.join(
+        if '_links' in data:
+            data['_links']['collection'] = '/'.join(
             data['_links']['collection'].split('/')[:-1]) + '/' + str(
             data['bucketlist_id'])
-        data['_links']['self'] = data['_links'][
+            data['_links']['self'] = data['_links'][
                                      'collection'] + '/' + str(data['id'])
         return data
 
@@ -143,13 +147,54 @@ class BucketlistItemSchema(ma.Schema):
 
 
 class BucketlistDetailsSchema(BucketlistSchema):
-    items = fields.Nested(BucketlistItemSchema, many=True)
+    items = fields.Nested(BucketlistItemSchema,
+                          many=True)
 
+class TagSchema(ma.Schema):
+    """
+    Schema used to validate and serialize tag data
+    """
+    id = fields.Integer(required=True, dump_only=True)
+    name = fields.Str(required=True,
+                             error_messages={
+                               'required': 'The tag name is required.'})
+    _links = ma.Hyperlinks({
+        'self': ma.URLFor('tag.tags', id='<id>'),
+        'collection': ma.URLFor('tag.tags')
+    }, dump_only=True)
+
+    @staticmethod
+    def editable_fields():
+        return ['description']
+
+    @post_load
+    def make_bucketlist(self, data):
+        # print("Post load bucketlist: ", data)
+        data['user'] = current_identity
+        return Bucketlist(**data)
+
+    @validates('description')
+    def validate_description(self, description):
+        if len(description) > 100:
+            raise ValidationError(
+                'Description cannot have more than 100 characters.')
+        elif len(description) < 1:
+            raise ValidationError(
+                'Description cannot be empty.')
+
+    @post_dump
+    def fix_bucket_link(self, data):
+        # print("Predump!!", data)
+        # data['item_count'] = len(data['items'])
+        data['_links']['self'] = data['_links']['collection'] + str(data['id'])
+        return data
 bucketlist_schema = BucketlistSchema()
 bucketlists_schema = BucketlistSchema(many=True)
 bucketlist_details_schema = BucketlistDetailsSchema()
 bucketlist_item_schema = BucketlistItemSchema()
 bucketlist_items_schema = BucketlistItemSchema(many=True)
+tag_schema = TagSchema()
+tags_schema = TagSchema(many=True)
 
 
 class Bucketlists(Resource):
@@ -317,6 +362,44 @@ class BucketlistItemDetails(Resource):
         return msg.format_success_message(
             "Bucketlist item successfully deleted", 200)
 
+
+class Tags(Resource):
+    method_decorators = [jwt_required()]
+
+    @staticmethod
+    def get():
+        """
+        Get a list of tags from the database
+        :return:
+        :rtype:
+        """
+        tags = Tag.query.filter_by(
+            id=1).all()
+        return tags_schema.dump(tags)
+
+    @staticmethod
+    def post():
+        """
+        Add a new tag to the database
+        :return:
+        :rtype:
+        """
+        post_data = json.loads(request.data.decode())
+        # print("Request decoded two: ", post_data, type(post_data))
+        tag, error = tag_schema.load(post_data)
+        print("tag: ", tag.__dict__)
+        if error:
+            return msg.format_field_errors(error)
+        tag = tag.create_tag()
+        if isinstance(tag, Tag):
+            tag_data, error = tag_schema.dump(tag)
+            if error:
+                return msg.format_field_errors(error)
+            return tag_data, 201
+        return msg.format_general_errors(
+            "An error occurred while creating the tag")
+
 api.add_resource(Bucketlists, '/')
+api.add_resource(Tags, '/tags')
 api.add_resource(BucketlistDetails, '/<int:id>')
 api.add_resource(BucketlistItemDetails, '/<int:id>/<int:item_id>')
