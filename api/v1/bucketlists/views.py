@@ -217,10 +217,12 @@ class BucketlistDetails(Resource):
         put_data = json.loads(request.data.decode())
         put_data['id'] = id
         data, error = bucketlist_schema.dump(put_data)
-        print("Data from put: ", data)
         if error:
             return msg.format_field_errors(error)
-        for key, value in data.items():
+        bucketlist_obj, error = bucketlist_schema.load(put_data)
+        if error:
+            return msg.format_field_errors(error)
+        for key, value in bucketlist_obj.__dict__.items():
             if key in bucketlist_schema.editable_fields():
                 setattr(bucketlist, key, value)
         bucketlist = bucketlist.update_bucketlist()
@@ -294,7 +296,7 @@ class BucketlistItemDetails(Resource):
         bucketlist_object, error = bucketlist_item_schema.load(put_data)
         if error:
             return msg.format_field_errors(error)
-        for key, value in data.items():
+        for key, value in bucketlist_object.__dict__.items():
             if key in bucketlist_item_schema.editable_fields():
                 setattr(bucketlist_item, key, value)
         bucketlist_item = bucketlist_item.update_bucketlist_item()
