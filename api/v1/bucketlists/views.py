@@ -1,5 +1,6 @@
 from flask import json
 from flask import jsonify, request
+from flask import url_for
 from flask_jwt import jwt_required, current_identity
 from flask_restful import Api, Resource, reqparse, abort, marshal_with
 from flask_marshmallow import Marshmallow
@@ -140,7 +141,7 @@ class BucketlistItemSchema(ma.Schema):
 
     @staticmethod
     def editable_fields():
-        return ['description', 'done', 'tags']
+        return ['description', 'done']
 
 
 class BucketlistDetailsSchema(BucketlistSchema):
@@ -153,6 +154,7 @@ bucketlist_details_schema = BucketlistDetailsSchema()
 bucketlist_item_schema = BucketlistItemSchema()
 bucketlist_items_schema = BucketlistItemSchema(many=True)
 
+
 class Bucketlists(Resource):
     method_decorators = [jwt_required()]
 
@@ -163,9 +165,25 @@ class Bucketlists(Resource):
         :return:
         :rtype:
         """
+        page = request.args.get('page', default=1, type=int)
+        limit = request.args.get('limit', default=20, type=int)
+        print("\n\n\n hdh Args: ", limit, page)
         bucket_lists = Bucketlist.query.filter_by(
-            user=current_identity).all()
-        return bucketlists_schema.dump(bucket_lists)
+            user=current_identity).paginate(page, limit,
+                                            error_out=False)
+        next_page_base_url = url_for("bucketlists.bucketlists")
+        if 'limit' in request.args and limit:
+            next_page_base_url += "?limit=" + str(limit)
+        if 'page' in request.args and int(page):
+            next_page_base_url += "&page=" + str(page)
+        return {"data": bucketlists_schema.dump(bucket_lists.items),
+                "current_page": bucket_lists.page,
+                "has_next": bucket_lists.has_next,
+                "has_previous": bucket_lists.has_prev,
+                "next_page": next_page_base_url,
+                "previous_page": bucket_lists.prev_num,
+                "total": bucket_lists.total
+                }
 
     @staticmethod
     def post():
@@ -176,7 +194,6 @@ class Bucketlists(Resource):
         """
         post_data = json.loads(request.data.decode())
         bucketlist, error = bucketlist_schema.load(post_data)
-        print("bucketlist: ", bucketlist.__dict__)
         if error:
             return msg.format_field_errors(error)
         bucketlist = bucketlist.create_bucketlist()
@@ -251,11 +268,9 @@ class BucketlistDetails(Resource):
         bucketlist_item, error = bucketlist_item_schema.load(post_data)
         if error:
             return msg.format_field_errors(error)
-        print("\n\n yu bucketlistitem: ", bucketlist_item)
 
         bucketlist_item = bucketlist_item.create_bucketlist_item(id)
         if isinstance(bucketlist_item, BucketlistItem):
-            print("\n\n && Valid bitem instance? ", bucketlist_item)
             bucketlist_item_data, error = bucketlist_item_schema.dump(
                 bucketlist_item)
             if error:
