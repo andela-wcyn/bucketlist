@@ -33,6 +33,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True)
     _password = db.Column(db.String(), nullable=False)
     bucketlists = db.relationship('Bucketlist', backref='user', lazy='dynamic')
+    tags = db.relationship('Tag', backref='user', lazy='dynamic')
 
     @hybrid_property
     def password(self):
@@ -194,7 +195,7 @@ class BucketlistItem(db.Model):
     done = db.Column(db.Boolean, default=False, nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.String(300), nullable=False)
-    tags = db.relationship("tag", secondary=tag_association_table,
+    tags = db.relationship("Tag", secondary=tag_association_table,
                            backref=db.backref('bucketlist_item'))
     bucketlist_id = db.Column(db.Integer, db.ForeignKey('bucketlist.id'),
                                   nullable=False)
@@ -240,6 +241,7 @@ class BucketlistItem(db.Model):
 
 class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(20), nullable=False)
 
     def __repr__(self):
@@ -252,7 +254,7 @@ class Tag(db.Model):
         else:
             return self
 
-    def create_tag(self, tag_id):
+    def create_tag(self):
         valid_tag = self.validate_tag()
         if isinstance(valid_tag, Tag):
             db.session.add(self)
