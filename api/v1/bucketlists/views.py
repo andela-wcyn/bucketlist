@@ -302,10 +302,12 @@ class BucketlistItemDetails(Resource):
             "An error occurred while updating the bucketlist")
 
     @staticmethod
-    def delete(**kwargs):
-        print("DELETE ID!: ", kwargs)
-        abort_if_bucketlist_doesnt_exist(kwargs['id'])
-        return '', 204
+    def delete(id, item_id):
+        abort_if_bucketlist_doesnt_exist(id)
+        bucketlist_item = abort_if_bucketlist_item_doesnt_exist(item_id)
+        bucketlist_item.delete_bucketlist_item()
+        return msg.format_success_message(
+            "Bucketlist item successfully deleted", 200)
 
 api.add_resource(Bucketlists, '/')
 api.add_resource(BucketlistDetails, '/<int:id>')
