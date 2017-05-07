@@ -20,6 +20,14 @@ ma = Marshmallow(bucketlists)
 msg = ErrorFormatter()
 
 
+def is_valid_json(data):
+    try:
+        json.loads(data)
+    except ValueError:
+        return False
+    return True
+
+
 def check_user_permission(user):
     if user != current_identity:
         abort(403, message="Forbidden. You may not view this data")
@@ -84,10 +92,12 @@ class BucketlistSchema(ma.Schema):
     def validate_description(self, description):
         if len(description) > 100:
             raise ValidationError(
-                'Description cannot have more than 100 characters.')
+                'Description cannot have more than 100 characters.',
+                field_names=['description'], fields=['description'])
         elif len(description) < 1:
             raise ValidationError(
-                'Description cannot be empty.')
+                'Description cannot be empty.',
+                field_names=['description'], fields=['description'])
 
     @post_dump
     def fix_bucket_link(self, data):
@@ -96,58 +106,6 @@ class BucketlistSchema(ma.Schema):
         data['_links']['self'] = data['_links']['collection'] + str(data['id'])
         return data
 
-
-class BucketlistItemSchema(ma.Schema):
-    """
-    Schema used to validate and serialize bucketlist item data
-    """
-    id = fields.Integer(required=True, dump_only=True)
-    bucketlist_id = fields.Integer(required=True, dump_only=True)
-    description = fields.Str(required=True,
-                             error_messages={
-                               'required': 'Description is required.'})
-    done = fields.Boolean(truthy=['t', 'T', 'true', 'True', 'TRUE', '1', 1,
-                                  True])
-    # Smart hyperlinking
-    _links = ma.Hyperlinks({
-        'self': ma.URLFor('bucketlists.bucketlists',
-                          bucketlist_id='<bucketlist_id>', id='<id>'),
-        'collection': ma.URLFor('bucketlists.bucketlists', id='<id>')
-    })
-
-    @validates('description')
-    def validate_description(self, description):
-        print("\n\n ^^^ Validating description!!:", description)
-        if len(description) > 300:
-            raise ValidationError(
-                'Description cannot have more than 300 characters.')
-        elif len(description) < 1:
-            raise ValidationError(
-                'Description cannot be empty.')
-
-    @post_dump
-    def fix_bucket_item_link(self, data):
-        if '_links' in data:
-            data['_links']['collection'] = '/'.join(
-            data['_links']['collection'].split('/')[:-1]) + '/' + str(
-            data['bucketlist_id'])
-            data['_links']['self'] = data['_links'][
-                                     'collection'] + '/' + str(data['id'])
-        return data
-
-    @post_load
-    def get_bucketlist_item(self, data):
-        print("Post load bucketlist item: ", data)
-        return BucketlistItem(**data)
-
-    @staticmethod
-    def editable_fields():
-        return ['description', 'done']
-
-
-class BucketlistDetailsSchema(BucketlistSchema):
-    items = fields.Nested(BucketlistItemSchema,
-                          many=True)
 
 class TagSchema(ma.Schema):
     """
@@ -177,16 +135,90 @@ class TagSchema(ma.Schema):
     def validate_description(self, name):
         if len(name) > 100:
             raise ValidationError(
-                'Tag name cannot have more than 20 characters.')
+                'Tag name cannot have more than 20 characters.',
+                field_names=['name'], fields=['name'])
         elif len(name) < 1:
             raise ValidationError(
-                'Tag name cannot be empty.')
+                'Tag name cannot be empty.',
+                field_names=['name'], fields=['name'])
 
     @post_dump
     def fix_tag_link(self, data):
-        data['_links']['self'] = data['_links']['collection'
-                                 ] + "/" + str(data['id'])
+        if '_links' in data:
+            data['_links']['self'] = data['_links']['collection'] +\
+                                 "/" + str(data['id'])
         return data
+
+
+class BucketlistItemSchema(ma.Schema):
+    """
+    Schema used to validate and serialize bucketlist item data
+    """
+    id = fields.Integer(required=True, dump_only=True)
+    bucketlist_id = fields.Integer(required=True, dump_only=True)
+    description = fields.Str(required=True,
+                             error_messages={
+                               'required': 'Description is required.'})
+    done = fields.Boolean(truthy=['t', 'T', 'true', 'True', 'TRUE', '1', 1,
+                                  True])
+    tags = fields.Nested(TagSchema, many=True, only=["name", "id"])
+    # Smart hyperlinking
+    _links = ma.Hyperlinks({
+        'self': ma.URLFor('bucketlists.bucketlists',
+                          bucketlist_id='<bucketlist_id>', id='<id>'),
+        'collection': ma.URLFor('bucketlists.bucketlists', id='<id>')
+    })
+
+    @validates('description')
+    def validate_description(self, description):
+        if len(description) > 300:
+            raise ValidationError(
+                'Description cannot have more than 300 characters.',
+                field_names=['description'], fields=['description'])
+        elif len(description) < 1:
+            raise ValidationError(
+                'Description cannot be empty.',
+                field_names=['description'], fields=['description'])
+
+    @post_dump
+    def fix_bucket_item_link(self, data):
+        print("\n\n Post dump bucketlist item: ", data)
+        if '_links' in data:
+            data['_links']['collection'] = '/'.join(
+            data['_links']['collection'].split('/')[:-1]) + '/' + str(
+            data['bucketlist_id'])
+            data['_links']['self'] = data['_links'][
+                                     'collection'] + '/' + str(data['id'])
+        return data
+
+    @post_load
+    def get_bucketlist_item(self, data):
+        print("\n\n Post load bucketlist item: ", data)
+        return BucketlistItem(**data)
+
+    @pre_dump
+    def check_tag_input(self, data):
+        print("\n\n yu Tag input pre dump?: ", data)
+
+        return data
+
+    @pre_load
+    def check_tag_input(self, data):
+        print("\n\n gjh Tags!: ", str(data['tags']))
+        if not is_valid_json(str(data['tags'])):
+            raise ValidationError(
+                'Tags must be valid json', field_names=['tags'], fields=[
+                    'tags'])
+        return data
+
+    @staticmethod
+    def editable_fields():
+        return ['description', 'done', 'tags']
+
+
+class BucketlistDetailsSchema(BucketlistSchema):
+    items = fields.Nested(BucketlistItemSchema,
+                          many=True)
 
 bucketlist_schema = BucketlistSchema()
 bucketlists_schema = BucketlistSchema(many=True)
@@ -293,9 +325,10 @@ class BucketlistDetails(Resource):
         # print("Request decoded two: ", post_data, type(post_data))
         print("post item data: ", post_data)
         bucketlist_item, error = bucketlist_item_schema.load(post_data)
-        print("bucketlistitem: ", bucketlist_item)
         if error:
             return msg.format_field_errors(error)
+        print("\n\n yu bucketlistitem: ", bucketlist_item)
+
         bucketlist_item = bucketlist_item.create_bucketlist_item(id)
         if isinstance(bucketlist_item, BucketlistItem):
             print("\n\n && Valid bitem instance? ", bucketlist_item)

@@ -196,7 +196,7 @@ class BucketlistItem(db.Model):
     date = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.String(300), nullable=False)
     tags = db.relationship("Tag", secondary=tag_association_table,
-                           backref=db.backref('bucketlist_item'))
+                           backref=db.backref('bucketlist_items'))
     bucketlist_id = db.Column(db.Integer, db.ForeignKey('bucketlist.id'),
                                   nullable=False)
 
@@ -249,10 +249,11 @@ class Tag(db.Model):
             self.name, self.id)
 
     def validate_tag(self):
-        if len(self.name) > 20 or len(self.name) < 1:
-            return False
-        else:
-            return self
+        # if len(self.name) > 20 or len(self.name) < 1:
+        #     return False
+        # else:
+        #     return self
+        pass
 
     def create_tag(self):
         valid_tag = self.validate_tag()
