@@ -166,22 +166,20 @@ class Bucketlists(Resource):
         :rtype:
         """
         page = request.args.get('page', default=1, type=int)
-        limit = request.args.get('limit', default=20, type=int)
+        limit = request.args.get('limit', default=10, type=int)
         print("\n\n\n hdh Args: ", limit, page)
         bucket_lists = Bucketlist.query.filter_by(
             user=current_identity).paginate(page, limit,
                                             error_out=False)
-        next_page_base_url = url_for("bucketlists.bucketlists")
-        if 'limit' in request.args and limit:
-            next_page_base_url += "?limit=" + str(limit)
-        if 'page' in request.args and int(page):
-            next_page_base_url += "&page=" + str(page)
+        page_base_url = url_for("bucketlists.bucketlists") + "?"
         return {"data": bucketlists_schema.dump(bucket_lists.items),
                 "current_page": bucket_lists.page,
                 "has_next": bucket_lists.has_next,
                 "has_previous": bucket_lists.has_prev,
-                "next_page": next_page_base_url,
-                "previous_page": bucket_lists.prev_num,
+                "next_page": page_base_url + "page=" +
+                str(bucket_lists.next_num),
+                "previous_page": page_base_url + "page=" +
+                str(bucket_lists.prev_num),
                 "total": bucket_lists.total
                 }
 
