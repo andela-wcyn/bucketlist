@@ -20,16 +20,17 @@ ma = Marshmallow(bucketlists)
 msg = ErrorFormatter()
 
 
+def check_user_permission(user):
+    if user != current_identity:
+        abort(403, message="Forbidden. You may not view this data")
+    return True
+
+
 def abort_if_bucketlist_doesnt_exist(bucketlist_id):
-    bucketlist = Bucketlist.query.filter_by(
-        id=bucketlist_id).first()
+    bucketlist = Bucketlist.get_bucketlist(bucketlist_id)
     if not bucketlist:
-        abort(404, message="Bucketlist '{}' doesn't exist".format(
-            bucketlist_id))
-    elif bucketlist.user != current_identity:
-            abort(403, message="Forbidden. You may not view this "
-                               "bucketlist")
-    else:
+        abort(404, message="The requested bucketlist does not exist")
+    elif check_user_permission(bucketlist.user):
         return bucketlist
 
 
@@ -55,7 +56,7 @@ class BucketlistSchema(ma.Schema):
 
     @post_load
     def make_bucketlist(self, data):
-        print("Post load bucketlist: ", data)
+        # print("Post load bucketlist: ", data)
         data['user'] = current_identity
         return Bucketlist(**data)
 
@@ -64,6 +65,14 @@ class BucketlistSchema(ma.Schema):
         if len(description) > 100:
             raise ValidationError(
                 'Description cannot have more than 100 characters.')
+
+    # @pre_dump
+    # def check_exists_and_permission(self, data):
+    #     print("Predump!!", data)
+    #     abort_if_bucketlist_doesnt_exist(data.id)
+    #     # # data['item_count'] = len(data['items'])
+    #     # data['_links']['self'] = data['_links']['collection'] + str(data['id'])
+    #     return data
 
     @post_dump
     def fix_bucket_link(self, data):
@@ -77,16 +86,16 @@ class BucketlistItemSchema(ma.Schema):
     """
     Schema used to validate and serialize bucketlist item data
     """
-    id = fields.Integer(required=True)
+    id = fields.Integer(required=True, dump_only=True)
+    bucketlist_id = fields.Integer(required=True, dump_only=True)
     description = fields.Str(required=True,
                              error_messages={
                                'required': 'Description is required.'})
-    bucketlist = fields.Nested(BucketlistSchema, dump_only=True, required=True)
     # Smart hyperlinking
     _links = ma.Hyperlinks({
-        'self': ma.URLFor('bucketlists.bucketlists', id='<id>'),
-        'collection': ma.URLFor('bucketlists.bucketlists', id='<id>',
-                                item_id='<item_id>')
+        'self': ma.URLFor('bucketlists.bucketlists',
+                          bucketlist_id='<bucketlist_id>', id='<id>'),
+        'collection': ma.URLFor('bucketlists.bucketlists', id='<id>')
     })
 
     @validates('description')
@@ -95,10 +104,19 @@ class BucketlistItemSchema(ma.Schema):
             raise ValidationError(
                 'Description cannot have more than 300 characters.')
 
-    # @pre_load(self)
-    # @post_load
-    # def make_user(self, data):
-    #     return User(**data)
+    @post_dump
+    def fix_bucket_item_link(self, data):
+        data['_links']['collection'] = '/'.join(
+            data['_links']['collection'].split('/')[:-1]) + '/' + str(
+            data['bucketlist_id'])
+        data['_links']['self'] = data['_links'][
+                                     'collection'] + '/' + str(data['id'])
+        return data
+
+    @post_load
+    def get_bucketlist_item(self, data):
+        print("Post load bucketlist item: ", data)
+        return BucketlistItem(**data)
 
 
 class BucketlistDetailsSchema(BucketlistSchema):
@@ -194,7 +212,7 @@ class BucketlistDetails(Resource):
     @staticmethod
     def post(id):
         """
-        Add a new Bucketlist Item to the bucketlist with specified id to the
+        Add a new Bucketlist Item to the bucketlist with specified id, to the
         database
         :param id: Bucketlist id from url
         :type id: integer
@@ -204,16 +222,19 @@ class BucketlistDetails(Resource):
         """
         post_data = json.loads(request.data.decode())
         # print("Request decoded two: ", post_data, type(post_data))
-        bucketlist, error = bucketlist_schema.load(post_data)
-        print("bucketlist: ", bucketlist.__dict__)
+        print("post item data: ", post_data)
+        bucketlist_item, error = bucketlist_item_schema.load(post_data)
+        print("bucketlistitem: ", bucketlist_item)
         if error:
             return msg.format_field_errors(error)
-        bucketlist = bucketlist.create_bucketlist()
-        if isinstance(bucketlist, Bucketlist):
-            bucketlist_data, error = bucketlist_schema.dump(bucketlist)
+        bucketlist_item = bucketlist_item.create_bucketlist_item(id)
+        if isinstance(bucketlist_item, BucketlistItem):
+            print("\n\n && Valid bitem instance? ", bucketlist_item)
+            bucketlist_item_data, error = bucketlist_item_schema.dump(
+                bucketlist_item)
             if error:
                 return msg.format_field_errors(error)
-            return bucketlist_data, 201
+            return bucketlist_item_data, 201
         return msg.format_general_errors(
             "An error occurred while creating the bucketlist")
 
@@ -230,7 +251,7 @@ class BucketlistItemDetails(Resource):
 
     @staticmethod
     def get(id, item_id):
-        bucketlist = abort_if_bucketlist_doesnt_exist(id)
+        abort_if_bucketlist_doesnt_exist(id)
         bucket_list_items = BucketlistItem.query.filter_by(
             bucketlist_id=id).all()
         return bucketlist_items_schema.dump(bucket_list_items)

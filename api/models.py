@@ -163,9 +163,11 @@ class Bucketlist(db.Model):
     def create_bucketlist(self):
         valid_bucketlist = self.validate_bucketlist()
         if isinstance(valid_bucketlist, Bucketlist):
-            db.session.add(self)
+            db.session.add(valid_bucketlist)
             db.session.commit()
-        return valid_bucketlist
+            return valid_bucketlist
+        else:
+            return None
 
     def update_bucketlist(self):
         valid_bucketlist = self.validate_bucketlist()
@@ -183,15 +185,56 @@ class Bucketlist(db.Model):
     def get_item_count(self):
         return self.items.count()
 
+    @staticmethod
+    def get_bucketlist(bucketlist_id):
+        bucketlist = Bucketlist.query.filter_by(
+            id=bucketlist_id).first()
+        return bucketlist
+
 
 class BucketlistItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.String(300))
     bucketlist_id = db.Column(db.Integer, db.ForeignKey('bucketlist.id'),
-                              nullable=False)
+                                  nullable=False)
 
     def __repr__(self):
-        return "<Bucketlist Item '{}': '{}'".format(
+        return "<Bucketlist Item '{}': '{}'>".format(
             self.description, self.bucketlist_id)
+
+    def validate_bucketlist_item(self):
+        if len(self.description) > 300:
+            print("\n\n\n ### Invalid!: ", self.__dict__)
+            return False
+        else:
+            return self
+
+    def create_bucketlist_item(self, bucketlist_id):
+        print("\n\n Creating? ", self)
+        self.bucketlist_id = bucketlist_id
+        valid_bucketlist_item = self.validate_bucketlist_item()
+        if isinstance(valid_bucketlist_item, BucketlistItem):
+            bucketlist = Bucketlist.get_bucketlist(bucketlist_id)
+            bucketlist.items.append(self)
+            db.session.add(self)
+            db.session.commit()
+            print("\n\n && yea Valid bitem? ", valid_bucketlist_item.__dict__)
+            return self
+        else:
+            return None
+
+    def update_bucketlist_item(self):
+        valid_bucketlist_item = self.validate_bucketlist_item()
+        if isinstance(valid_bucketlist_item, BucketlistItem):
+            print("\n\n Valid bucketlist_item? ", valid_bucketlist_item.__dict__)
+            # db.session.add(self)
+            db.session.commit()
+        print("\n\n Valid bucketlist_item2 ? ", valid_bucketlist_item.__dict__)
+        return valid_bucketlist_item
+
+    def delete_bucketlist_item(self):
+        db.session.delete(self)
+        db.session.commit()
+
 

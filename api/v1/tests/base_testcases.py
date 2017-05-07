@@ -43,9 +43,9 @@ class BaseTestCase(TestCase):
                                       user=self.user1)
 
         self.bucketlist_item = BucketlistItem(description="An item",
-                                              bucketlist=self.bucketlist)
+                                              bucketlist_object=self.bucketlist)
         self.bucketlist_item2 = BucketlistItem(description="An item 2",
-                                               bucketlist=self.bucketlist)
+                                               bucketlist_object=self.bucketlist)
 
         self.db.session.add(self.user1)
         self.db.session.add(self.user2)

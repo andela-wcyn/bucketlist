@@ -15,7 +15,7 @@ class BucketlistsGetTestCase(APIGetTestCase):
         """
         Test it returns a list of bucketlists
         """
-        self.url = url_for("bucketlists.all_bucketlists")
+        self.url = url_for("bucketlists.bucketlists")
         self.expected_data = [BaseTestCase.bucketlist_dict,
                               BaseTestCase.bucketlist2_dict]
         self.get_all()
@@ -27,7 +27,7 @@ class BucketlistsGetTestCase(APIGetTestCase):
         """
         Test it returns the correct bucketlist given the id
         """
-        self.url = url_for('bucketlists.bucketlist', id=1)
+        self.url = url_for('bucketlists.bucketlistdetails', id=1)
         self.expected_data = BaseTestCase.bucketlist_dict
         self.get_one()
 
@@ -35,7 +35,7 @@ class BucketlistsGetTestCase(APIGetTestCase):
         """
         Test it returns 404 not found error if not exists
         """
-        self.url = url_for('bucketlists.bucketlist', id=20)
+        self.url = url_for('bucketlists.bucketlistdetails', id=20)
         self.expected_data = BaseTestCase.bucketlist_dict
         self.status = 404
         self.get_one()
@@ -47,7 +47,7 @@ class BucketlistsGetTestCase(APIGetTestCase):
         """
         Test it returns a list of bucketlist items for the bucketlist
         """
-        self.url = url_for('bucketlists.bucketlist_items', id=1)
+        self.url = url_for('bucketlists.bucketlistdetails', id=1)
         self.expected_data = [BaseTestCase.bucketlist_item_dict,
                               BaseTestCase.bucketlist_item2_dict]
         self.get_all()
@@ -56,7 +56,7 @@ class BucketlistsGetTestCase(APIGetTestCase):
         """
         Test it returns empty list for an empty bucketlist
         """
-        self.url = url_for('bucketlists.bucketlist_items', id=2)
+        self.url = url_for('bucketlists.bucketlistdetails', id=2)
         self.get_all()
 
     def test_get_bucketlists_items_bucketlist_not_exists(self):
