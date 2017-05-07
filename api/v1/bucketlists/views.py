@@ -29,9 +29,20 @@ def check_user_permission(user):
 def abort_if_bucketlist_doesnt_exist(bucketlist_id):
     bucketlist = Bucketlist.get_bucketlist(bucketlist_id)
     if not bucketlist:
-        abort(404, message="The requested bucketlist does not exist")
+        abort(404, message="Bucketlist '{}' does not exist".format(
+            bucketlist_id))
     elif check_user_permission(bucketlist.user):
         return bucketlist
+
+
+def abort_if_bucketlist_item_doesnt_exist(bucketlist_item_id):
+    bucketlist_item = BucketlistItem.get_bucketlist_item(bucketlist_item_id)
+    if not bucketlist_item:
+        abort(404, message="Bucketlist item '{}' does not exist".format(
+            bucketlist_item_id
+        ))
+    elif check_user_permission(bucketlist_item.bucketlist.user):
+        return bucketlist_item
 
 
 class BucketlistSchema(ma.Schema):
@@ -65,7 +76,9 @@ class BucketlistSchema(ma.Schema):
         if len(description) > 100:
             raise ValidationError(
                 'Description cannot have more than 100 characters.')
-
+        elif len(description) < 1:
+            raise ValidationError(
+                'Description cannot be empty.')
     # @pre_dump
     # def check_exists_and_permission(self, data):
     #     print("Predump!!", data)
@@ -103,6 +116,9 @@ class BucketlistItemSchema(ma.Schema):
         if len(description) > 300:
             raise ValidationError(
                 'Description cannot have more than 300 characters.')
+        elif len(description) < 1:
+            raise ValidationError(
+                'Description cannot be empty.')
 
     @post_dump
     def fix_bucket_item_link(self, data):
@@ -117,6 +133,10 @@ class BucketlistItemSchema(ma.Schema):
     def get_bucketlist_item(self, data):
         print("Post load bucketlist item: ", data)
         return BucketlistItem(**data)
+
+    @staticmethod
+    def editable_fields():
+        return ['description']
 
 
 class BucketlistDetailsSchema(BucketlistSchema):
@@ -252,28 +272,32 @@ class BucketlistItemDetails(Resource):
     @staticmethod
     def get(id, item_id):
         abort_if_bucketlist_doesnt_exist(id)
+        abort_if_bucketlist_item_doesnt_exist(item_id)
         bucket_list_items = BucketlistItem.query.filter_by(
-            bucketlist_id=id).all()
-        return bucketlist_items_schema.dump(bucket_list_items)
+            bucketlist_id=id, id=item_id).first()
+        return bucketlist_item_schema.dump(bucket_list_items)
 
     @staticmethod
     def put(id, item_id):
         bucketlist = abort_if_bucketlist_doesnt_exist(id)
+        bucketlist_item = abort_if_bucketlist_item_doesnt_exist(item_id)
         put_data = json.loads(request.data.decode())
-        put_data['id'] = id
-        data, error = bucketlist_schema.dump(put_data)
+        put_data['id'] = item_id
+        put_data['bucketlist_id'] = id
+        data, error = bucketlist_item_schema.dump(put_data)
         print("Data from put: ", data)
         if error:
             return msg.format_field_errors(error)
         for key, value in data.items():
-            if key in bucketlist_schema.editable_fields():
-                setattr(bucketlist, key, value)
-        bucketlist = bucketlist.update_bucketlist()
-        if isinstance(bucketlist, Bucketlist):
-            bucketlist_data, error = bucketlist_schema.dump(bucketlist)
+            if key in bucketlist_item_schema.editable_fields():
+                setattr(bucketlist_item, key, value)
+        bucketlist_item = bucketlist_item.update_bucketlist_item()
+        if isinstance(bucketlist_item, BucketlistItem):
+            bucketlist_item_data, error = bucketlist_item_schema.dump(
+                bucketlist_item)
             if error:
                 return msg.format_field_errors(error)
-            return bucketlist_data, 201
+            return bucketlist_item_data, 201
         return msg.format_general_errors(
             "An error occurred while updating the bucketlist")
 

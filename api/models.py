@@ -8,6 +8,7 @@ from werkzeug.security import safe_str_cmp
 from api import db, bcrypt
 # from api.v1.auth import auth
 
+
 class UserToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(300))
@@ -28,14 +29,11 @@ class User(db.Model):
 
     @hybrid_property
     def password(self):
-        print("\n\n ^^^ Password Here: ", self._password)
         return self._password
 
     @password.setter
     def password(self, plaintext):
-        print("\n\n ^^^ Plaintext: ", plaintext)
         self._password = bcrypt.generate_password_hash(plaintext).decode()
-        print("\n\n ^^^ Password created: ", self._password)
 
     @staticmethod
     def valid_email(email_str):
@@ -75,11 +73,8 @@ class User(db.Model):
     @staticmethod
     def username_exists(username):
         user = User.query.filter_by(username=username).first()
-        print("Username Exists or not?: ", user)
         if user:
-            print("Yes, exists")
             return True
-        print("No, not exists")
         return False
 
     @staticmethod
@@ -126,7 +121,6 @@ class User(db.Model):
             return "Internal Error. Invalid identification method"
         if user:
             if bcrypt.check_password_hash(user.password, password):
-                print("\n\n*** Yep!!")
                 return user
             else:
                 return "Invalid credentials"
@@ -135,7 +129,6 @@ class User(db.Model):
 
     @staticmethod
     def identity(payload):
-        print("\n\n &&& Identifying...")
         user_id = payload['id']
         return User.query.filter_by(id=user_id).first()
 
@@ -172,10 +165,7 @@ class Bucketlist(db.Model):
     def update_bucketlist(self):
         valid_bucketlist = self.validate_bucketlist()
         if isinstance(valid_bucketlist, Bucketlist):
-            print("\n\n Valid bucketlist? ", valid_bucketlist.__dict__)
-            # db.session.add(self)
             db.session.commit()
-        print("\n\n Valid bucketlist2 ? ", valid_bucketlist.__dict__)
         return valid_bucketlist
 
     def delete_bucketlist(self):
@@ -204,14 +194,12 @@ class BucketlistItem(db.Model):
             self.description, self.bucketlist_id)
 
     def validate_bucketlist_item(self):
-        if len(self.description) > 300:
-            print("\n\n\n ### Invalid!: ", self.__dict__)
+        if len(self.description) > 300 or len(self.description) < 1:
             return False
         else:
             return self
 
     def create_bucketlist_item(self, bucketlist_id):
-        print("\n\n Creating? ", self)
         self.bucketlist_id = bucketlist_id
         valid_bucketlist_item = self.validate_bucketlist_item()
         if isinstance(valid_bucketlist_item, BucketlistItem):
@@ -219,7 +207,6 @@ class BucketlistItem(db.Model):
             bucketlist.items.append(self)
             db.session.add(self)
             db.session.commit()
-            print("\n\n && yea Valid bitem? ", valid_bucketlist_item.__dict__)
             return self
         else:
             return None
@@ -227,14 +214,17 @@ class BucketlistItem(db.Model):
     def update_bucketlist_item(self):
         valid_bucketlist_item = self.validate_bucketlist_item()
         if isinstance(valid_bucketlist_item, BucketlistItem):
-            print("\n\n Valid bucketlist_item? ", valid_bucketlist_item.__dict__)
-            # db.session.add(self)
             db.session.commit()
-        print("\n\n Valid bucketlist_item2 ? ", valid_bucketlist_item.__dict__)
         return valid_bucketlist_item
 
     def delete_bucketlist_item(self):
         db.session.delete(self)
         db.session.commit()
+
+    @staticmethod
+    def get_bucketlist_item(bucketlist_item_id):
+        bucketlist_item = BucketlistItem.query.filter_by(
+            id=bucketlist_item_id).first()
+        return bucketlist_item
 
 
