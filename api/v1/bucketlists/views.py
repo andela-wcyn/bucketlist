@@ -7,11 +7,10 @@ from marshmallow import ValidationError, validates
 from marshmallow import fields
 from marshmallow import post_dump
 from marshmallow import post_load
-from marshmallow import pre_dump
 from marshmallow import pre_load
 
 from api.message_formatter import ErrorFormatter
-from api.models import Bucketlist, BucketlistItem, Tag
+from api.models import Bucketlist, BucketlistItem
 from api.v1.auth.views import UserSchema
 from . import bucketlists
 
@@ -51,16 +50,6 @@ def abort_if_bucketlist_item_doesnt_exist(bucketlist_item_id):
         ))
     elif check_user_permission(bucketlist_item.bucketlist.user):
         return bucketlist_item
-
-
-def abort_if_tag_doesnt_exist(tag_id):
-    tag = Tag.get_tag(tag_id)
-    if not tag:
-        abort(404, message="Tag '{}' does not exist".format(
-            tag_id
-        ))
-    elif check_user_permission(tag.user):
-        return tag
 
 
 class BucketlistSchema(ma.Schema):
@@ -107,49 +96,6 @@ class BucketlistSchema(ma.Schema):
         return data
 
 
-class TagSchema(ma.Schema):
-    """
-    Schema used to validate and serialize tag data
-    """
-    id = fields.Integer(required=True, dump_only=True)
-    name = fields.Str(required=True,
-                      error_messages={
-                               'required': 'The tag name is required.'})
-    user = fields.Nested(UserSchema, only='username',
-                         dump_only=True, required=True)
-    _links = ma.Hyperlinks({
-        'self': ma.URLFor('bucketlists.tags', id='<id>'),
-        'collection': ma.URLFor('bucketlists.tags')
-    }, dump_only=True)
-
-    @staticmethod
-    def editable_fields():
-        return ['name']
-
-    @post_load
-    def make_tag(self, data):
-        data['user'] = current_identity
-        return Tag(**data)
-
-    @validates('name')
-    def validate_description(self, name):
-        if len(name) > 100:
-            raise ValidationError(
-                'Tag name cannot have more than 20 characters.',
-                field_names=['name'], fields=['name'])
-        elif len(name) < 1:
-            raise ValidationError(
-                'Tag name cannot be empty.',
-                field_names=['name'], fields=['name'])
-
-    @post_dump
-    def fix_tag_link(self, data):
-        if '_links' in data:
-            data['_links']['self'] = data['_links']['collection'] +\
-                                 "/" + str(data['id'])
-        return data
-
-
 class BucketlistItemSchema(ma.Schema):
     """
     Schema used to validate and serialize bucketlist item data
@@ -161,7 +107,6 @@ class BucketlistItemSchema(ma.Schema):
                                'required': 'Description is required.'})
     done = fields.Boolean(truthy=['t', 'T', 'true', 'True', 'TRUE', '1', 1,
                                   True])
-    tags = fields.Nested(TagSchema, many=True, only=["name", "id"])
     # Smart hyperlinking
     _links = ma.Hyperlinks({
         'self': ma.URLFor('bucketlists.bucketlists',
@@ -196,21 +141,6 @@ class BucketlistItemSchema(ma.Schema):
         print("\n\n Post load bucketlist item: ", data)
         return BucketlistItem(**data)
 
-    @pre_dump
-    def check_tag_input(self, data):
-        print("\n\n yu Tag input pre dump?: ", data)
-
-        return data
-
-    @pre_load
-    def check_tag_input(self, data):
-        print("\n\n gjh Tags!: ", str(data['tags']))
-        if not is_valid_json(str(data['tags'])):
-            raise ValidationError(
-                'Tags must be valid json', field_names=['tags'], fields=[
-                    'tags'])
-        return data
-
     @staticmethod
     def editable_fields():
         return ['description', 'done', 'tags']
@@ -225,9 +155,6 @@ bucketlists_schema = BucketlistSchema(many=True)
 bucketlist_details_schema = BucketlistDetailsSchema()
 bucketlist_item_schema = BucketlistItemSchema()
 bucketlist_items_schema = BucketlistItemSchema(many=True)
-tag_schema = TagSchema()
-tags_schema = TagSchema(many=True)
-
 
 class Bucketlists(Resource):
     method_decorators = [jwt_required()]
@@ -370,10 +297,11 @@ class BucketlistItemDetails(Resource):
         if error:
             return msg.format_field_errors(error)
         # Load so as to validate
-        bucketlist_object, error = bucketlist_item_schema.load(put_data)
+
+        bucketlist_item_object, error = bucketlist_item_schema.load(put_data)
         if error:
             return msg.format_field_errors(error)
-        for key, value in bucketlist_object.__dict__.items():
+        for key, value in bucketlist_item_object.__dict__.items():
             if key in bucketlist_item_schema.editable_fields():
                 setattr(bucketlist_item, key, value)
         bucketlist_item = bucketlist_item.update_bucketlist_item()
@@ -395,85 +323,6 @@ class BucketlistItemDetails(Resource):
             "Bucketlist item successfully deleted", 200)
 
 
-class TagDetails(Resource):
-    method_decorators = [jwt_required()]
-
-    @staticmethod
-    def get(id):
-        tag = abort_if_tag_doesnt_exist(id)
-        return tag_schema.dump(tag)
-
-    @staticmethod
-    def put(id):
-        tag = abort_if_tag_doesnt_exist(id)
-        put_data = json.loads(request.data.decode())
-        data, error = tag_schema.dump(put_data)
-        if error:
-            return msg.format_field_errors(error)
-        # Load so as to validate
-        tag_object, error = tag_schema.load(put_data)
-        if error:
-            return msg.format_field_errors(error)
-        for key, value in tag_object.__dict__.items():
-            if key in tag_schema.editable_fields():
-                setattr(tag, key, value)
-        tag = tag.update_tag()
-        if isinstance(tag, Tag):
-            tag_data, error = tag_schema.dump(
-                tag)
-            if error:
-                return msg.format_field_errors(error)
-            return tag_data, 201
-        return msg.format_general_errors(
-            "An error occurred while updating the tag")
-
-    @staticmethod
-    def delete(id):
-        tag = abort_if_tag_doesnt_exist(id)
-        tag.delete_tag_item()
-        return msg.format_success_message(
-            "Tag item successfully deleted", 200)
-
-
-class Tags(Resource):
-    method_decorators = [jwt_required()]
-
-    @staticmethod
-    def get():
-        """
-        Get a list of tags from the database
-        :return:
-        :rtype:
-        """
-        tags = Tag.query.filter_by(
-            id=1).all()
-        return tags_schema.dump(tags)
-
-    @staticmethod
-    def post():
-        """
-        Add a new tag to the database
-        :return:
-        :rtype:
-        """
-        post_data = json.loads(request.data.decode())
-        # print("Request decoded two: ", post_data, type(post_data))
-        tag, error = tag_schema.load(post_data)
-        print("tag: ", tag.__dict__)
-        if error:
-            return msg.format_field_errors(error)
-        tag = tag.create_tag()
-        if isinstance(tag, Tag):
-            tag_data, error = tag_schema.dump(tag)
-            if error:
-                return msg.format_field_errors(error)
-            return tag_data, 201
-        return msg.format_general_errors(
-            "An error occurred while creating the tag")
-
-
 api.add_resource(Bucketlists, '/')
-api.add_resource(Tags, '/tags')
-api.add_resource(TagDetails, '/tags/<int:id>')
 api.add_resource(BucketlistDetails, '/<int:id>')
 api.add_resource(BucketlistItemDetails, '/<int:id>/<int:item_id>')

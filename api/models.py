@@ -8,14 +8,6 @@ from werkzeug.security import safe_str_cmp
 from api import db, bcrypt
 # from api.v1.auth import auth
 
-
-tag_association_table = db.Table('tag_association', db.Model.metadata,
-    db.Column('bucketlist_item_id', db.Integer, db.ForeignKey(
-        'bucketlist_item.id')),
-    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
-)
-
-
 class UserToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(300))
@@ -195,8 +187,6 @@ class BucketlistItem(db.Model):
     done = db.Column(db.Boolean, default=False, nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.String(300), nullable=False)
-    tags = db.relationship("Tag", secondary=tag_association_table,
-                           backref=db.backref('bucketlist_items'))
     bucketlist_id = db.Column(db.Integer, db.ForeignKey('bucketlist.id'),
                                   nullable=False)
 
@@ -237,45 +227,3 @@ class BucketlistItem(db.Model):
         bucketlist_item = BucketlistItem.query.filter_by(
             id=bucketlist_item_id).first()
         return bucketlist_item
-
-
-class Tag(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    name = db.Column(db.String(20), nullable=False)
-
-    def __repr__(self):
-        return "<Tag '{}': '{}'>".format(
-            self.name, self.id)
-
-    def validate_tag(self):
-        # if len(self.name) > 20 or len(self.name) < 1:
-        #     return False
-        # else:
-        #     return self
-        pass
-
-    def create_tag(self):
-        valid_tag = self.validate_tag()
-        if isinstance(valid_tag, Tag):
-            db.session.add(self)
-            db.session.commit()
-            return self
-        else:
-            return None
-
-    def update_tag(self):
-        valid_tag = self.validate_tag()
-        if isinstance(valid_tag, Tag):
-            db.session.commit()
-        return valid_tag
-
-    def delete_tag(self):
-        db.session.delete(self)
-        db.session.commit()
-
-    @staticmethod
-    def get_tag(tag_id):
-        tag = Tag.query.filter_by(
-            id=tag_id).first()
-        return tag
