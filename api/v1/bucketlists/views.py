@@ -3,11 +3,8 @@ from flask import jsonify, request
 from flask_jwt import jwt_required, current_identity
 from flask_restful import Api, Resource, reqparse, abort, marshal_with
 from flask_marshmallow import Marshmallow
-from marshmallow import ValidationError, validates
-from marshmallow import fields
-from marshmallow import post_dump
-from marshmallow import post_load
-from marshmallow import pre_load
+from marshmallow import (ValidationError, validates, fields, post_dump,
+                         post_load)
 
 from api.message_formatter import ErrorFormatter
 from api.models import Bucketlist, BucketlistItem
