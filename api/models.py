@@ -25,7 +25,6 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True)
     _password = db.Column(db.String(), nullable=False)
     bucketlists = db.relationship('Bucketlist', backref='user', lazy='dynamic')
-    tags = db.relationship('Tag', backref='user', lazy='dynamic')
 
     @hybrid_property
     def password(self):
