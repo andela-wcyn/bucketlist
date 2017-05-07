@@ -202,7 +202,7 @@ class BucketlistItem(db.Model):
 
     def __repr__(self):
         return "<Bucketlist Item '{}': '{}'>".format(
-            self.description, self.bucketlist_id)
+            self.description, self.id)
 
     def validate_bucketlist_item(self):
         if len(self.description) > 300 or len(self.description) < 1:
@@ -222,8 +222,15 @@ class BucketlistItem(db.Model):
         else:
             return None
 
-    def update_bucketlist_item(self):
+    def update_bucketlist_item(self, tags):
         valid_bucketlist_item = self.validate_bucketlist_item()
+        print("\n\n ghvj Tag loadedggg: ", tags, self.__dict__)
+        with db.session.no_autoflush:
+            # q = session.query(X).filter(X._val == self._val)
+            # x = q.one()
+            # print('x={}'.format(x))
+            self.tags = tags
+        print("Updating BIT function:...")
         if isinstance(valid_bucketlist_item, BucketlistItem):
             db.session.commit()
         return valid_bucketlist_item
@@ -240,7 +247,7 @@ class BucketlistItem(db.Model):
 
 
 class Tag(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(20), nullable=False)
 
@@ -249,13 +256,20 @@ class Tag(db.Model):
             self.name, self.id)
 
     def validate_tag(self):
-        # if len(self.name) > 20 or len(self.name) < 1:
-        #     return False
-        # else:
-        #     return self
+        if len(self.name) > 20 or len(self.name) < 1:
+            return False
+        else:
+            return self
         pass
 
     def create_tag(self):
+        tag_name = Tag.query.filter_by(
+            user_id=self.user_id, name=self.name).first()
+        if tag_name:
+            raise ValidationError(
+                'You already have this tag', field_names=['tags'], fields=[
+                    'tags'])
+
         valid_tag = self.validate_tag()
         if isinstance(valid_tag, Tag):
             db.session.add(self)

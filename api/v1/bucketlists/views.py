@@ -1,3 +1,5 @@
+import ast
+
 from flask import json
 from flask import jsonify, request
 from flask_jwt import jwt_required, current_identity
@@ -10,6 +12,7 @@ from marshmallow import post_load
 from marshmallow import pre_dump
 from marshmallow import pre_load
 
+from api import db
 from api.message_formatter import ErrorFormatter
 from api.models import Bucketlist, BucketlistItem, Tag
 from api.v1.auth.views import UserSchema
@@ -22,6 +25,7 @@ msg = ErrorFormatter()
 
 def is_valid_json(data):
     try:
+        json.dumps(data)
         json.loads(data)
     except ValueError:
         return False
@@ -50,6 +54,7 @@ def abort_if_bucketlist_item_doesnt_exist(bucketlist_item_id):
             bucketlist_item_id
         ))
     elif check_user_permission(bucketlist_item.bucketlist.user):
+        print("Abort not exist:", bucketlist_item, bucketlist_item.__dict__)
         return bucketlist_item
 
 
@@ -194,26 +199,32 @@ class BucketlistItemSchema(ma.Schema):
     @post_load
     def get_bucketlist_item(self, data):
         print("\n\n Post load bucketlist item: ", data)
-        return BucketlistItem(**data)
 
-    @pre_dump
-    def check_tag_input(self, data):
-        print("\n\n yu Tag input pre dump?: ", data)
-
-        return data
+        with db.session.no_autoflush:
+            bucketlist_item = BucketlistItem(**data)
+            print("BUcketlist Item Load after: ", bucketlist_item.__dict__)
+            return bucketlist_item
 
     @pre_load
     def check_tag_input(self, data):
-        print("\n\n gjh Tags!: ", str(data['tags']))
-        if not is_valid_json(str(data['tags'])):
-            raise ValidationError(
-                'Tags must be valid json', field_names=['tags'], fields=[
-                    'tags'])
+        if 'tags' in data:
+            tags = data['tags']
+            for tag in tags:
+                try:
+                    tag_eval = ast.literal_eval(str(tag))
+                    if not isinstance(tag_eval, dict):
+                        raise ValidationError(
+                        'Tags must be valid json', field_names=['tags'], fields=[
+                            'tags'])
+                except (ValueError, ):
+                    raise ValidationError(
+                        'Tags must be valid json', field_names=['tags'], fields=[
+                            'tags'])
         return data
 
     @staticmethod
     def editable_fields():
-        return ['description', 'done', 'tags']
+        return ['description', 'done']
 
 
 class BucketlistDetailsSchema(BucketlistSchema):
@@ -363,6 +374,8 @@ class BucketlistItemDetails(Resource):
     def put(id, item_id):
         abort_if_bucketlist_doesnt_exist(id)
         bucketlist_item = abort_if_bucketlist_item_doesnt_exist(item_id)
+        print("\n\n 1. gjh Before Updating BIT:...:", "\n\n",
+              bucketlist_item.__dict__)
         put_data = json.loads(request.data.decode())
         put_data['id'] = item_id
         put_data['bucketlist_id'] = id
@@ -370,13 +383,20 @@ class BucketlistItemDetails(Resource):
         if error:
             return msg.format_field_errors(error)
         # Load so as to validate
-        bucketlist_object, error = bucketlist_item_schema.load(put_data)
+        bucketlist_item_object, error = bucketlist_item_schema.load(put_data)
+        print("\n\n 3. gjh Before Updating BIT:...:", "\n\n",
+              bucketlist_item.__dict__)
+        print("\n\n\nLoaded BITEM: ", bucketlist_item_object.__dict__)
         if error:
             return msg.format_field_errors(error)
-        for key, value in bucketlist_object.__dict__.items():
+        print("\n\n gjh Before Updating BIT:...:", bucketlist_item_object.__dict__, "\n\n", bucketlist_item.__dict__)
+        for key, value in bucketlist_item_object.__dict__.items():
             if key in bucketlist_item_schema.editable_fields():
+                print("Updating BIT:...", bucketlist_item.__dict__)
                 setattr(bucketlist_item, key, value)
-        bucketlist_item = bucketlist_item.update_bucketlist_item()
+
+        print("Final Updating BIT:...", bucketlist_item.__dict__)
+        bucketlist_item = bucketlist_item.update_bucketlist_item(bucketlist_item_object.tags)
         if isinstance(bucketlist_item, BucketlistItem):
             bucketlist_item_data, error = bucketlist_item_schema.dump(
                 bucketlist_item)
