@@ -139,7 +139,7 @@ class User(db.Model):
 class Bucketlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, default=datetime.utcnow)
-    description = db.Column(db.String(300))
+    description = db.Column(db.String(300), nullable=False)
     items = db.relationship('BucketlistItem', backref='bucketlist',
                             lazy='dynamic')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -184,8 +184,9 @@ class Bucketlist(db.Model):
 
 class BucketlistItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    done = db.Column(db.Boolean, default=False, nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)
-    description = db.Column(db.String(300))
+    description = db.Column(db.String(300), nullable=False)
     bucketlist_id = db.Column(db.Integer, db.ForeignKey('bucketlist.id'),
                                   nullable=False)
 

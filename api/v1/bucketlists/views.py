@@ -104,6 +104,8 @@ class BucketlistItemSchema(ma.Schema):
     description = fields.Str(required=True,
                              error_messages={
                                'required': 'Description is required.'})
+    done = fields.Boolean(truthy=['t', 'T', 'true', 'True', 'TRUE', '1', 1,
+                                  True])
     # Smart hyperlinking
     _links = ma.Hyperlinks({
         'self': ma.URLFor('bucketlists.bucketlists',
@@ -113,6 +115,7 @@ class BucketlistItemSchema(ma.Schema):
 
     @validates('description')
     def validate_description(self, description):
+        print("\n\n ^^^ Validating description!!:", description)
         if len(description) > 300:
             raise ValidationError(
                 'Description cannot have more than 300 characters.')
@@ -136,7 +139,7 @@ class BucketlistItemSchema(ma.Schema):
 
     @staticmethod
     def editable_fields():
-        return ['description']
+        return ['description', 'done']
 
 
 class BucketlistDetailsSchema(BucketlistSchema):
@@ -279,13 +282,16 @@ class BucketlistItemDetails(Resource):
 
     @staticmethod
     def put(id, item_id):
-        bucketlist = abort_if_bucketlist_doesnt_exist(id)
+        abort_if_bucketlist_doesnt_exist(id)
         bucketlist_item = abort_if_bucketlist_item_doesnt_exist(item_id)
         put_data = json.loads(request.data.decode())
         put_data['id'] = item_id
         put_data['bucketlist_id'] = id
         data, error = bucketlist_item_schema.dump(put_data)
-        print("Data from put: ", data)
+        if error:
+            return msg.format_field_errors(error)
+        # Load so as to validate
+        bucketlist_object, error = bucketlist_item_schema.load(put_data)
         if error:
             return msg.format_field_errors(error)
         for key, value in data.items():
