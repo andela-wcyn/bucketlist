@@ -136,6 +136,7 @@ class User(db.Model):
 
 
 class Bucketlist(db.Model):
+    __searchable__ = ['description', 'items']
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.String(300), nullable=False)
@@ -182,6 +183,7 @@ class Bucketlist(db.Model):
 
 
 class BucketlistItem(db.Model):
+    __searchable__ = ['description']
     id = db.Column(db.Integer, primary_key=True)
     done = db.Column(db.Boolean, default=False, nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)
