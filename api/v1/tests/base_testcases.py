@@ -99,7 +99,7 @@ class APIGetTestCase(BaseTestCase):
     # def __init__(self):
     # self.headers = {'Authorization': self.token.decode()}
 
-    def get_all(self, status=200):
+    def get_all(self, container=None):
         """
         :param status: Status expected in the response
         :type status: Integer
@@ -109,10 +109,15 @@ class APIGetTestCase(BaseTestCase):
         response = self.get_data()
         data = json.loads(response.data)
         if "data" in data:
-            data = data.get("data")[0]
-        response = self.get_data()
+            data = data.get("data")
+            if isinstance(data, list):
+                print("ADta zero: ", data)
+                data = data[0]
+            if container:
+                for key in container:
+                    data = data[key]
         print("\n\nResponse: ", response)
-        self.assertEqual(response.status_code, status)
+        self.assertEqual(response.status_code, self.status)
         print("\n%% Get data dict: ", data)
         self.assertEqual(len(self.expected_data), len(data))
 
