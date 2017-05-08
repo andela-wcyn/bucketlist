@@ -7,22 +7,6 @@ from .base_testcases import (BaseTestCase, APIGetTestCase,
 
 
 class BucketlistsGetTestCase(APIGetTestCase):
-    @staticmethod
-    def not_exists_message(id="", item_id="", item=False):
-        original_item_id = item_id
-        if item_id:
-            item_id = "/" + item_id
-        if item:
-            return {'message':
-                    "Bucketlist item '{}' does not exist. You have requested "
-                    "this URI [/v1/bucketlists/{}{}] but did you mean "
-                    "/v1/bucketlists/<int:id> ?".format(original_item_id, id,
-                                                        item_id)}
-        else:
-            return {'message':
-                    "Bucketlist '{}' does not exist. You have requested "
-                    "this URI [/v1/bucketlists/{}{}] but did you mean "
-                    "/v1/bucketlists/<int:id> ?".format(id, id, item_id)}
 
     # GET /bucketlists/ #
     # ----------------- #
@@ -54,7 +38,7 @@ class BucketlistsGetTestCase(APIGetTestCase):
         self.url = url_for('bucketlists.bucketlistdetails', id=20)
         self.expected_data = self.not_exists_message("20")
         self.status = 404
-        self.get_one(fail=True)
+        self.get_one()
 
     # GET /bucketlists/<id>/items/ #
     # ---------------------------- #
@@ -80,7 +64,6 @@ class BucketlistsGetTestCase(APIGetTestCase):
         Test it returns 404 Not Found error when bucketlist does not exist
         """
         self.url = url_for('bucketlists.bucketlists') + "4"
-        print("Url: ", self.url)
         self.expected_data = self.not_exists_message("4")
         self.status = 404
         self.get_all()
@@ -93,7 +76,6 @@ class BucketlistsGetTestCase(APIGetTestCase):
         Test it returns a particular bucketlist item for the bucketlist
         """
         self.url = url_for('bucketlists.bucketlists') + "1/1"
-        print("URL: ", self.url)
         self.expected_data = BaseTestCase.bucketlist_item_dict
         self.get_one()
 
@@ -104,7 +86,7 @@ class BucketlistsGetTestCase(APIGetTestCase):
         self.url = url_for('bucketlists.bucketlists') + "1/4"
         self.expected_data = self.not_exists_message("1", "4", item=True)
         self.status = 404
-        self.get_one(fail=True)
+        self.get_one()
 
     def test_get_bucketlists_item_bucketlist_not_exists(self):
         """
@@ -125,12 +107,13 @@ class BucketlistsPostTestCase(APIPostTestCase):
         """
         Test it returns the newly created bucketlist
         """
-
-        self.post_data = {
-            "description": "Travel",
-            "user": 1
-        }
-        self.url = url_for('bucketlists.all_bucketlists')
+        self.post_data = {'description': 'Travel'}
+        self.expected_data = {'item_count': 0, 'id': 3, '_links': {
+            'self': '/v1/bucketlists/3',
+            'collection': '/v1/bucketlists/'},
+                          'description': 'Travel',
+                          'user': {'username': self.user1.username}}
+        self.url = url_for('bucketlists.bucketlists')
         self.create()
 
     def test_post_bucketlists_with_wrong_fields(self):
@@ -141,20 +124,22 @@ class BucketlistsPostTestCase(APIPostTestCase):
             "tests": "Travel",
             "test2": 1
         }
-        self.url = url_for('bucketlists.all_bucketlists')
+        self.expected_data = {'field_errors': {'description': [
+            'Description is required.']}}
+        self.url = url_for('bucketlists.bucketlists')
         self.status = 400
-        self.create(True)
+        self.create()
 
     def test_post_bucketlists_with_missing_fields(self):
         """
         Test it returns 400 Bad Request error on missing fields
         """
-        self.post_data = {
-            "description": "Travel"
-        }
-        self.url = url_for('bucketlists.all_bucketlists')
+        self.post_data = {}
+        self.expected_data = {'field_errors': {'description': [
+            'Description is required.']}}
+        self.url = url_for('bucketlists.bucketlists')
         self.status = 400
-        self.create(True)
+        self.create()
 
     # POST /bucketlists/<id>/items/ #
     # ----------------------------- #
@@ -165,8 +150,13 @@ class BucketlistsPostTestCase(APIPostTestCase):
         """
         self.post_data = {
             "description": "Travel to Cairo",
-            "bucketlist_id": 1
+            "done": True
         }
+        self.expected_data = {'id': 3, 'description': 'Travel to Cairo',
+                              'done': True, '_links': {
+                                'self': '/v1/bucketlists/1/3',
+                                'collection': '/v1/bucketlists/1'},
+                              'bucketlist_id': 1}
         self.url = url_for('bucketlists.bucketlists') + "1"
         self.create()
 
@@ -178,20 +168,24 @@ class BucketlistsPostTestCase(APIPostTestCase):
             "tests": "Travel Somewhere",
             "test2": 1
         }
-        self.url = url_for('bucketlists.all_bucketlists') + "1"
+        self.expected_data = {'field_errors': {'description': [
+            'Description is required.']}}
+        self.url = url_for('bucketlists.bucketlists') + "1"
         self.status = 400
-        self.create(True)
+        self.create()
 
     def test_post_bucketlists_item_with_missing_fields(self):
         """
         Test it returns 400 Bad Request error on missing fields
         """
         self.post_data = {
-            "description": "Travel to Cairo"
+            "done": "true"
         }
-        self.url = url_for('bucketlists.all_bucketlists') + "1/"
+        self.expected_data = {'field_errors': {'description': [
+            'Description is required.']}}
+        self.url = url_for('bucketlists.bucketlists') + "1"
         self.status = 400
-        self.create(True)
+        self.create()
 
     def test_post_bucketlists_item_bucketlist_not_exists(self):
         """
@@ -200,9 +194,10 @@ class BucketlistsPostTestCase(APIPostTestCase):
         self.post_data = {
             "description": "Travel to Cairo"
         }
-        self.url = url_for('bucketlists.all_bucketlists') + "1/"
+        self.expected_data = self.not_exists_message("5")
+        self.url = url_for('bucketlists.bucketlists') + "5"
         self.status = 404
-        self.create(True)
+        self.create()
 
 
 class BucketlistsPutTestCase(APIPutTestCase):
@@ -218,7 +213,7 @@ class BucketlistsPutTestCase(APIPutTestCase):
             "description": "My Bucketlist modified"
         }
         self.original_data = BaseTestCase.bucketlist_dict
-        self.url = url_for('bucketlists.bucketlist') + "1/"
+        self.url = url_for('bucketlists.bucketlist') + "1"
         self.modify()
 
     def test_put_bucketlists_id_not_exists(self):
@@ -229,7 +224,7 @@ class BucketlistsPutTestCase(APIPutTestCase):
             "description": "My Bucketlist modified"
         }
         self.original_data = BaseTestCase.bucketlist_dict
-        self.url = url_for('bucketlists.bucketlist') + "1/"
+        self.url = url_for('bucketlists.bucketlist') + "1"
         self.status = 404
         self.modify()
 
@@ -241,7 +236,7 @@ class BucketlistsPutTestCase(APIPutTestCase):
             "some_field": "My Bucketlist modified"
         }
         self.original_data = BaseTestCase.bucketlist_dict
-        self.url = url_for('bucketlists.bucketlist') + "1/"
+        self.url = url_for('bucketlists.bucketlist') + "1"
         self.status = 400
         self.modify()
 
@@ -255,7 +250,7 @@ class BucketlistsDeleteTestCase(APIDeleteTestCase):
         """
         Test it deletes a bucketlist
         """
-        url = url_for('bucketlists.bucketlist') + "1/"
+        url = url_for('bucketlists.bucketlist') + "1"
         self.remove()
 
     def test_delete_bucketlists_id_not_exists(self):

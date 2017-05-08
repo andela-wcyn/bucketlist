@@ -72,9 +72,9 @@ class BaseTestCase(TestCase):
         self.db.session.add(self.bucketlist_item2)
         self.db.session.commit()
 
-        self.jwt_token = self.client.post(url_for('auth.login'),
-                         data=json.dumps({"username": "wcyn", "password":
-                             "12345678"})).data.decode()
+        self.jwt_token = self.client.post(
+            url_for('auth.login'), data=json.dumps(
+                {"username": "wcyn", "password": "12345678"})).data.decode()
         self.jwt_token = json.loads(self.jwt_token).pop("token", "")
         print("token: ", self.jwt_token)
 
@@ -85,6 +85,23 @@ class BaseTestCase(TestCase):
         self.db.session.remove()
         self.db.drop_all()
 
+    @staticmethod
+    def not_exists_message(id="", item_id="", item=False):
+        original_item_id = item_id
+        if item_id:
+            item_id = "/" + item_id
+        if item:
+            return {'message':
+                    "Bucketlist item '{}' does not exist. You have requested "
+                    "this URI [/v1/bucketlists/{}{}] but did you mean "
+                    "/v1/bucketlists/<int:id> ?".format(original_item_id,
+                                                            id,
+                                                            item_id)}
+        else:
+            return {'message':
+                    "Bucketlist '{}' does not exist. You have requested "
+                    "this URI [/v1/bucketlists/{}{}] but did you mean "
+                    "/v1/bucketlists/<int:id> ?".format(id, id, item_id)}
 
 class APIGetTestCase(BaseTestCase):
     """
@@ -126,10 +143,8 @@ class APIGetTestCase(BaseTestCase):
             self.assertIn(data_item, data)
             self.assertIn(data_item, data)
 
-    def get_one(self, fail=False):
+    def get_one(self):
         """
-        :param status: Status expected in the response
-        :type status: Integer
         :return:
         :rtype:
         """
@@ -137,7 +152,6 @@ class APIGetTestCase(BaseTestCase):
         data = json.loads(response.data)
         if "data" in data:
             data = data.get("data")
-        print("\n\nGet one?", data)
         self.assertEqual(response.status_code, self.status)
 
         # Ensure expected data exists in response
@@ -164,23 +178,29 @@ class APIPostTestCase(BaseTestCase):
     """
     url = ""
     post_data = {}
+    expected_data = {}
     status = 201  # Created
-    headers = {}
+    headers = {"Content-Type": "application/json"}
+    token = ""
 
-    def create(self, fail=False):
+    def create(self):
         response = self.post()
         data_dict = json.loads(response.data)
+        print("Data post: ", data_dict)
         self.assertEqual(response.status_code, self.status)
-        self.assertEqual(self.post_data, data_dict)
-
-        if fail:
-            self.assertNotIn(self.post_data, data_dict)
+        self.assertEqual(self.expected_data, data_dict)
 
     def post(self):
+        token = "JWT "
+        if self.token:
+            token += self.token
+        else:
+            token += self.jwt_token
+        self.headers.update({"Authorization": token})
         if self.headers:
             return self.client.post(self.url,
                                     data=json.dumps(self.post_data),
-                                    headers=json.dumps(self.headers))
+                                    headers=self.headers)
         else:
             return self.client.post(self.url,
                                     data=json.dumps(self.post_data))
@@ -210,7 +230,7 @@ class APIPutTestCase(BaseTestCase):
         if self.headers:
             return self.client.put(self.url,
                                    data=json.dumps(self.put_data),
-                                   headers=json.dumps(self.headers))
+                                   headers=self.headers)
         else:
             return self.client.put(self.url,
                                    data=json.dumps(self.put_data))
@@ -235,7 +255,7 @@ class APIDeleteTestCase(BaseTestCase):
     def delete(self):
         if self.headers:
             return self.client.delete(self.url,
-                                      headers=json.dumps(self.headers))
+                                      headers=self.headers)
         else:
             return self.client.delete(self.url)
 

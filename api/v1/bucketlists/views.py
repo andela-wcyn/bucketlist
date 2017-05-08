@@ -300,9 +300,8 @@ class BucketlistDetails(Resource):
         error message
         :rtype: JSON
         """
+        abort_if_bucketlist_doesnt_exist(id)
         post_data = json.loads(request.data.decode())
-        # print("Request decoded two: ", post_data, type(post_data))
-        print("post item data: ", post_data)
         bucketlist_item, error = bucketlist_item_schema.load(post_data)
         if error:
             return msg.format_field_errors(error)
