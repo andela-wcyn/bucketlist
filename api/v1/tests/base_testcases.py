@@ -13,11 +13,27 @@ class BaseTestCase(TestCase):
     Create a Test Database, Set up the required objects and Delete them after
     every test
     """
-    token = "token"
-    bucketlist_dict = {"description": "My Bucketlist", "user": 1}
-    bucketlist2_dict = {"description": "My Bucketlist 2", "user": 1}
-    bucketlist_item_dict = {"description": "My Item", "bucketlist": 1}
-    bucketlist_item2_dict = {"description": "My Item 2", "bucketlist": 1}
+    bucketlist_dict = {'user': {
+        'username': 'wcyn'}, 'description':'My Bucketlist', '_links': {
+        'self': '/v1/bucketlists/1', 'collection': '/v1/bucketlists/'
+    }, 'item_count': 2, 'id': 1}
+    bucketlist2_dict = {'user': {
+        'username': 'wcyn'}, 'description':'My Bucketlist 2', '_links': {
+        'self': '/v1/bucketlists/2', 'collection': '/v1/bucketlists/'
+    }, 'item_count': 0, 'id': 2}
+    bucketlist_item_dict = {'bucketlist_id': 1, 'description': 'An item',
+                            'done': False, '_links': {
+                'self': '/v1/bucketlists/1/1',
+            'collection': '/v1/bucketlists/1'}, 'id': 1}
+    bucketlist_item2_dict = {'bucketlist_id': 1, 'description': 'An item 2',
+                             'done': False, '_links': {
+            'self': '/v1/bucketlists/1/2', 'collection': '/v1/bucketlists/1'},
+                             'id': 2}
+    bucketlist_dict_one = {'bucketlist': {
+        'description': 'My Bucketlist', 'user': {
+            'username': 'wcyn'}, 'item_count': 2, '_links': {
+            'self': '/v1/bucketlists/1', 'collection': '/v1/bucketlists/'},
+        'id': 1, 'items': [bucketlist_item_dict, bucketlist_item2_dict]}}
 
     def create_app(self):
         """
@@ -33,10 +49,11 @@ class BaseTestCase(TestCase):
         self.db.create_all()
         self.client = self.app.test_client()
 
-        self.user1 = User(username="wcyn", email="cynthia.abura@andela.com",
+        self.user1 = User(username="wcyn",
+                          email="cynthia.abura@andela.com",
+                          password='12345678')
+        self.user2 = User(username="paul11123", email="paul@andela.com",
                           password='123456781')
-        self.user2 = User(username="paul", email="paul@andela.com",
-                          password='1234567811')
         self.bucketlist = Bucketlist(description="My Bucketlist",
                                      user=self.user1)
         self.bucketlist2 = Bucketlist(description="My Bucketlist 2",
@@ -55,10 +72,11 @@ class BaseTestCase(TestCase):
         self.db.session.add(self.bucketlist_item2)
         self.db.session.commit()
 
-        self.token = self.client.post(url_for('auth.login'),
+        self.jwt_token = self.client.post(url_for('auth.login'),
                          data=json.dumps({"username": "wcyn", "password":
-                             "123456781"})).data.decode()
-        print("token: ", self.token)
+                             "12345678"})).data.decode()
+        self.jwt_token = json.loads(self.jwt_token).pop("token", "")
+        print("token: ", self.jwt_token)
 
     def tearDown(self):
         """
@@ -75,7 +93,8 @@ class APIGetTestCase(BaseTestCase):
     url = ""
     status = 200
     expected_data = []  # Expected data
-    headers = {'Authorization': "JWT " + BaseTestCase.token}
+    headers = {"Content-Type": "application/json"}
+    token = ""
 
     # def __init__(self):
     # self.headers = {'Authorization': self.token.decode()}
@@ -88,16 +107,21 @@ class APIGetTestCase(BaseTestCase):
         :rtype:
         """
         response = self.get_data()
-        data_dict = json.loads(response.data)
+        data = json.loads(response.data)
+        if "data" in data:
+            data = data.get("data")[0]
+        response = self.get_data()
+        print("\n\nResponse: ", response)
         self.assertEqual(response.status_code, status)
-        self.assertEqual(len(self.expected_data), len(data_dict))
+        print("\n%% Get data dict: ", data)
+        self.assertEqual(len(self.expected_data), len(data))
 
         # Ensure expected data exists in response
-        for data in self.expected_data:
-            self.assertIn(data, data_dict)
-            self.assertIn(data, data_dict)
+        for data_item in self.expected_data:
+            self.assertIn(data_item, data)
+            self.assertIn(data_item, data)
 
-    def get_one(self):
+    def get_one(self, fail=False):
         """
         :param status: Status expected in the response
         :type status: Integer
@@ -105,17 +129,26 @@ class APIGetTestCase(BaseTestCase):
         :rtype:
         """
         response = self.get_data()
-        data_dict = json.loads(response.data)
+        data = json.loads(response.data)
+        if "data" in data:
+            data = data.get("data")
+        print("\n\nGet one?", data)
         self.assertEqual(response.status_code, self.status)
 
         # Ensure expected data exists in response
-        self.assertEqual(self.expected_data, data_dict)
+        self.assertEqual(self.expected_data, data)
 
     def get_data(self):
-        print('Our header is: ', self.headers)
+        token = "JWT "
+        if self.token:
+            token += self.token
+        else:
+            token += self.jwt_token
+        self.headers.update({"Authorization": token})
+        print("\n\nHeaders: ", json.dumps(self.headers), type(json.dumps(self.headers)))
         if self.headers:
             return self.client.get(self.url,
-                                   headers=json.dumps(self.headers))
+                                   headers=self.headers)
         else:
             return self.client.get(self.url)
 

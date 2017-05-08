@@ -127,13 +127,13 @@ class BucketlistItemSchema(ma.Schema):
 
     @post_dump
     def fix_bucket_item_link(self, data):
-        print("\n\n Post dump bucketlist item: ", data)
         if '_links' in data:
             data['_links']['collection'] = '/'.join(
-            data['_links']['collection'].split('/')[:-1]) + '/' + str(
-            data['bucketlist_id'])
+                data['_links']['collection'].split('/')[:-1]) + '/' + str(
+                data['bucketlist_id'])
             data['_links']['self'] = data['_links'][
-                                     'collection'] + '/' + str(data['id'])
+                                         'collection'] + '/' + str(data['id'])
+        print("\n\n Post dump bucketlist item: ", data)
         return data
 
     @post_load

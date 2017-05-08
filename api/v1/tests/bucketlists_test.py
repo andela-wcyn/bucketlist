@@ -28,7 +28,7 @@ class BucketlistsGetTestCase(APIGetTestCase):
         Test it returns the correct bucketlist given the id
         """
         self.url = url_for('bucketlists.bucketlistdetails', id=1)
-        self.expected_data = BaseTestCase.bucketlist_dict
+        self.expected_data = BaseTestCase.bucketlist_dict_one
         self.get_one()
 
     def test_get_bucketlists_id_if_not_exists(self):
@@ -36,9 +36,12 @@ class BucketlistsGetTestCase(APIGetTestCase):
         Test it returns 404 not found error if not exists
         """
         self.url = url_for('bucketlists.bucketlistdetails', id=20)
-        self.expected_data = BaseTestCase.bucketlist_dict
+        self.expected_data = {'message': "Bucketlist '20' does not exist. "
+                                         "You have requested this URI "
+                                         "[/v1/bucketlists/20] but did you "
+                                         "mean /v1/bucketlists/<int:id> ?"}
         self.status = 404
-        self.get_one()
+        self.get_one(fail=True)
 
     # GET /bucketlists/<id>/items/ #
     # ---------------------------- #
@@ -63,7 +66,7 @@ class BucketlistsGetTestCase(APIGetTestCase):
         """
         Test it returns 404 Not Found error when bucketlist does not exist
         """
-        self.url = url_for('bucketlists.bucketlist_items', id=4)
+        self.url = url_for('bucketlists.bucketlists', id=4)
         self.status = 404
         self.get_all()
 
@@ -74,7 +77,8 @@ class BucketlistsGetTestCase(APIGetTestCase):
         """
         Test it returns a particular bucketlist item for the bucketlist
         """
-        self.url = url_for('bucketlists.bucketlist_items', id=1, item_id=1)
+        self.url = url_for('bucketlists.bucketlists') + "1/1"
+        print("URL: ", self.url)
         self.expected_data = BaseTestCase.bucketlist_item_dict
         self.get_one()
 
@@ -82,15 +86,15 @@ class BucketlistsGetTestCase(APIGetTestCase):
         """
         Test it returns 404 Not Found Error if item does not exist
         """
-        self.url = url_for('bucketlists.bucketlist_items', id=1, item_id=4)
+        self.url = url_for('bucketlists.bucketlists', id=1, item_id=4)
         self.status = 404
-        self.get_one()
+        self.get_one(fail=True)
 
     def test_get_bucketlists_item_bucketlist_not_exists(self):
         """
         Test it returns 404 Bad Request error when bucketlist does not exist
         """
-        self.url = url_for('bucketlists.bucketlist_items', id=4, item_id=1)
+        self.url = url_for('bucketlists.bucketlists', id=4, item_id=1)
         self.status = 404
         self.get_one()
 
@@ -146,7 +150,7 @@ class BucketlistsPostTestCase(APIPostTestCase):
             "description": "Travel to Cairo",
             "bucketlist_id": 1
         }
-        self.url = url_for('bucketlists.bucketlist_items', id=1)
+        self.url = url_for('bucketlists.bucketlists', id=1)
         self.create()
 
     def test_post_bucketlists_items_with_wrong_fields(self):
