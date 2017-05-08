@@ -1,12 +1,10 @@
 from datetime import datetime, timedelta
 import jwt
-from marshmallow import ValidationError
 from sqlalchemy.ext.hybrid import hybrid_property
 from validate_email import validate_email
-from werkzeug.security import safe_str_cmp
+
 
 from api import db, bcrypt
-# from api.v1.auth import auth
 
 class UserToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -190,7 +188,6 @@ class BucketlistItem(db.Model):
     description = db.Column(db.String(300), nullable=False)
     bucketlist_id = db.Column(db.Integer, db.ForeignKey('bucketlist.id'),
                                   nullable=False)
-
     def __repr__(self):
         return "<Bucketlist Item '{}': '{}'>".format(
             self.description, self.bucketlist_id)
@@ -228,3 +225,4 @@ class BucketlistItem(db.Model):
         bucketlist_item = BucketlistItem.query.filter_by(
             id=bucketlist_item_id).first()
         return bucketlist_item
+

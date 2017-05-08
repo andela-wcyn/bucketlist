@@ -1,3 +1,4 @@
+from flask import current_app
 from flask import json
 from flask import request
 from flask import url_for
@@ -6,6 +7,7 @@ from flask_restful import Api, Resource, abort
 from flask_marshmallow import Marshmallow
 from marshmallow import (ValidationError, validates, fields, post_dump,
                          post_load)
+from sqlalchemy import literal
 
 from api.message_formatter import ErrorFormatter
 from api.models import Bucketlist, BucketlistItem
@@ -166,9 +168,13 @@ class Bucketlists(Resource):
         """
         page = request.args.get('page', default=1, type=int)
         limit = request.args.get('limit', default=10, type=int)
-        bucket_lists = Bucketlist.query.filter_by(
-            user=current_identity).paginate(page, limit, error_out=False)
         page_base_url = url_for("bucketlists.bucketlists") + "?"
+        q = request.args.get('q', default='', type=str)
+        bucket_lists = Bucketlist.query.filter_by(user=current_identity)
+        if q:
+            bucket_lists = bucket_lists.filter(Bucketlist.description.like(
+                "%" + literal(q) + "%"))
+        bucket_lists = bucket_lists.paginate(page, limit, error_out=False)
         return {"data": bucketlists_schema.dump(bucket_lists.items),
                 "current_page": bucket_lists.page,
                 "has_next": bucket_lists.has_next,
@@ -216,6 +222,7 @@ class BucketlistDetails(Resource):
         bucketlist = abort_if_bucketlist_doesnt_exist(id)
         page = request.args.get('page', default=1, type=int)
         limit = request.args.get('limit', default=10, type=int)
+
         bucketlist_items = BucketlistItem.query.filter_by(
             bucketlist_id=id).paginate(page, limit, error_out=False)
         page_base_url = url_for("bucketlists.bucketlists") + str(id) + "?"
