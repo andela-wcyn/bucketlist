@@ -170,9 +170,11 @@ class Bucketlists(Resource):
         limit = request.args.get('limit', default=10, type=int)
         page_base_url = url_for("bucketlists.bucketlists") + "?"
         q = request.args.get('q', default='', type=str)
+
         bucket_lists = Bucketlist.query.filter_by(user=current_identity)
         if q:
-            bucket_lists = bucket_lists.filter(Bucketlist.description.like(
+            print("\n\n Yes q!! ")
+            bucket_lists = bucket_lists.filter(Bucketlist.description.ilike(
                 "%" + literal(q) + "%"))
         bucket_lists = bucket_lists.paginate(page, limit, error_out=False)
         return {"data": bucketlists_schema.dump(bucket_lists.items),
@@ -222,9 +224,15 @@ class BucketlistDetails(Resource):
         bucketlist = abort_if_bucketlist_doesnt_exist(id)
         page = request.args.get('page', default=1, type=int)
         limit = request.args.get('limit', default=10, type=int)
+        q = request.args.get('q', default='', type=str)
 
         bucketlist_items = BucketlistItem.query.filter_by(
-            bucketlist_id=id).paginate(page, limit, error_out=False)
+            bucketlist_id=id)
+        if q:
+            bucketlist_items = bucketlist_items.filter(
+                BucketlistItem.description.ilike("%" + literal(q) + "%"))
+
+        bucketlist_items = bucketlist_items.paginate(page, limit, error_out=False)
         page_base_url = url_for("bucketlists.bucketlists") + str(id) + "?"
         bucketlist_data, error = bucketlist_schema.dump(bucketlist)
         if error:
