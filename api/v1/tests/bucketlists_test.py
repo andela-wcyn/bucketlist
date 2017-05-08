@@ -213,7 +213,12 @@ class BucketlistsPutTestCase(APIPutTestCase):
             "description": "My Bucketlist modified"
         }
         self.original_data = BaseTestCase.bucketlist_dict
-        self.url = url_for('bucketlists.bucketlist') + "1"
+        self.expected_data = {
+            'user': {'username': 'wcyn'}, 'id': 1,
+            '_links': {'self': '/v1/bucketlists/1',
+                       'collection': '/v1/bucketlists/'},
+            'description': 'My Bucketlist modified', 'item_count': 2}
+        self.url = url_for('bucketlists.bucketlists') + "1"
         self.modify()
 
     def test_put_bucketlists_id_not_exists(self):
@@ -224,7 +229,8 @@ class BucketlistsPutTestCase(APIPutTestCase):
             "description": "My Bucketlist modified"
         }
         self.original_data = BaseTestCase.bucketlist_dict
-        self.url = url_for('bucketlists.bucketlist') + "1"
+        self.expected_data = self.not_exists_message("4")
+        self.url = url_for('bucketlists.bucketlists') + "4"
         self.status = 404
         self.modify()
 
@@ -236,7 +242,9 @@ class BucketlistsPutTestCase(APIPutTestCase):
             "some_field": "My Bucketlist modified"
         }
         self.original_data = BaseTestCase.bucketlist_dict
-        self.url = url_for('bucketlists.bucketlist') + "1"
+        self.expected_data = {'field_errors': {'description': [
+            'Description is required.']}}
+        self.url = url_for('bucketlists.bucketlists') + "1"
         self.status = 400
         self.modify()
 
@@ -250,7 +258,7 @@ class BucketlistsDeleteTestCase(APIDeleteTestCase):
         """
         Test it deletes a bucketlist
         """
-        url = url_for('bucketlists.bucketlist') + "1"
+        url = url_for('bucketlists.bucketlists') + "1"
         self.remove()
 
     def test_delete_bucketlists_id_not_exists(self):
@@ -258,7 +266,7 @@ class BucketlistsDeleteTestCase(APIDeleteTestCase):
         Test it returns 404 if Bucketlist does not exist
         """
 
-        url = url_for('bucketlists.bucketlist') + "7/"
+        url = url_for('bucketlists.bucketlists') + "7/"
         status = 404
         self.remove()
 

@@ -212,21 +212,27 @@ class APIPutTestCase(BaseTestCase):
     """
     url = ""
     put_data = {}  # Modified field data
-    status = 200
+    status = 201
     original_data = {}  # Data before modification
-    headers = {}
+    expected_data = {}  # Expected response
+    headers = {"Content-Type": "application/json"}
+    token = ""
 
     def modify(self):
         response = self.put()
         data_dict = json.loads(response.data)
+        print("\nModified: ", data_dict)
         self.assertEqual(response.status_code, self.status)
         self.assertNotEqual(self.original_data, data_dict)
-
-        # Update original data dict with new fields
-        self.original_data.update(self.put_data)
-        self.assertEqual(self.original_data, data_dict)
+        self.assertEqual(self.expected_data, data_dict)
 
     def put(self):
+        token = "JWT "
+        if self.token:
+            token += self.token
+        else:
+            token += self.jwt_token
+        self.headers.update({"Authorization": token})
         if self.headers:
             return self.client.put(self.url,
                                    data=json.dumps(self.put_data),
