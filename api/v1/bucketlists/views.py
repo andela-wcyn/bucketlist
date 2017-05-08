@@ -6,6 +6,7 @@ from flask_restful import Api, Resource, reqparse, abort, marshal_with
 from flask_marshmallow import Marshmallow
 from marshmallow import (ValidationError, validates, fields, post_dump,
                          post_load)
+from marshmallow import pre_dump
 
 from api.message_formatter import ErrorFormatter
 from api.models import Bucketlist, BucketlistItem
@@ -145,8 +146,7 @@ class BucketlistItemSchema(ma.Schema):
 
 
 class BucketlistDetailsSchema(BucketlistSchema):
-    items = fields.Nested(BucketlistItemSchema,
-                          many=True)
+    items = fields.Nested(BucketlistItemSchema, many=True)
 
 bucketlist_schema = BucketlistSchema()
 bucketlists_schema = BucketlistSchema(many=True)
@@ -167,10 +167,8 @@ class Bucketlists(Resource):
         """
         page = request.args.get('page', default=1, type=int)
         limit = request.args.get('limit', default=10, type=int)
-        print("\n\n\n hdh Args: ", limit, page)
         bucket_lists = Bucketlist.query.filter_by(
-            user=current_identity).paginate(page, limit,
-                                            error_out=False)
+            user=current_identity).paginate(page, limit, error_out=False)
         page_base_url = url_for("bucketlists.bucketlists") + "?"
         return {"data": bucketlists_schema.dump(bucket_lists.items),
                 "current_page": bucket_lists.page,
@@ -217,7 +215,35 @@ class BucketlistDetails(Resource):
         :rtype: JSON
         """
         bucketlist = abort_if_bucketlist_doesnt_exist(id)
-        return bucketlist_details_schema.dump(bucketlist)
+        page = request.args.get('page', default=1, type=int)
+        limit = request.args.get('limit', default=10, type=int)
+        bucketlist_items = BucketlistItem.query.filter_by(
+            bucketlist_id=id).paginate(page, limit, error_out=False)
+        page_base_url = url_for("bucketlists.bucketlists") + str(id) + "?"
+        bucketlist_data, error = bucketlist_schema.dump(bucketlist)
+        if error:
+            return msg.format_field_errors(error)
+        data = {
+            'bucketlist': bucketlist_data
+        }
+        print("Data one: ", data)
+        bucketlist_items_data, error = bucketlist_items_schema.dump(
+            bucketlist_items.items)
+        if error:
+            return msg.format_field_errors(error)
+        # bucketlist_items_schema.dump(bucketlist_items_data.items)
+        data['bucketlist']['items'] = bucketlist_items_data
+        print("Data two: ", data['bucketlist'])
+        return {"data": data,
+                "current_page": bucketlist_items.page,
+                "has_next": bucketlist_items.has_next,
+                "has_previous": bucketlist_items.has_prev,
+                "next_page": page_base_url + "page=" +
+                             str(bucketlist_items.next_num),
+                "previous_page": page_base_url + "page=" +
+                                 str(bucketlist_items.prev_num),
+                "total": bucketlist_items.total
+                }
 
     @staticmethod
     def put(id):
