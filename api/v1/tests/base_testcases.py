@@ -13,7 +13,7 @@ class BaseTestCase(TestCase):
     Create a Test Database, Set up the required objects and Delete them after
     every test
     """
-
+    token = "token"
     bucketlist_dict = {"description": "My Bucketlist", "user": 1}
     bucketlist2_dict = {"description": "My Bucketlist 2", "user": 1}
     bucketlist_item_dict = {"description": "My Item", "bucketlist": 1}
@@ -34,19 +34,19 @@ class BaseTestCase(TestCase):
         self.client = self.app.test_client()
 
         self.user1 = User(username="wcyn", email="cynthia.abura@andela.com",
-                          password='12345678')
+                          password='123456781')
         self.user2 = User(username="paul", email="paul@andela.com",
-                          password='12345678')
+                          password='1234567811')
         self.bucketlist = Bucketlist(description="My Bucketlist",
                                      user=self.user1)
         self.bucketlist2 = Bucketlist(description="My Bucketlist 2",
                                       user=self.user1)
 
-        self.bucketlist_item = BucketlistItem(description="An item",
-                                              bucketlist_object=self.bucketlist)
-        self.bucketlist_item2 = BucketlistItem(description="An item 2",
-                                               bucketlist_object=self.bucketlist)
+        self.bucketlist_item = BucketlistItem(description="An item")
+        self.bucketlist_item2 = BucketlistItem(description="An item 2")
 
+        self.bucketlist.items.append(self.bucketlist_item)
+        self.bucketlist.items.append(self.bucketlist_item2)
         self.db.session.add(self.user1)
         self.db.session.add(self.user2)
         self.db.session.add(self.bucketlist)
@@ -55,8 +55,10 @@ class BaseTestCase(TestCase):
         self.db.session.add(self.bucketlist_item2)
         self.db.session.commit()
 
-        self.client.post(url_for('auth.login'),
-                         data=dict(username='wcyn', password='12345678'))
+        self.token = self.client.post(url_for('auth.login'),
+                         data=json.dumps({"username": "wcyn", "password":
+                             "123456781"})).data.decode()
+        print("token: ", self.token)
 
     def tearDown(self):
         """
@@ -73,7 +75,10 @@ class APIGetTestCase(BaseTestCase):
     url = ""
     status = 200
     expected_data = []  # Expected data
-    headers = {}
+    headers = {'Authorization': "JWT " + BaseTestCase.token}
+
+    # def __init__(self):
+    # self.headers = {'Authorization': self.token.decode()}
 
     def get_all(self, status=200):
         """
@@ -107,6 +112,7 @@ class APIGetTestCase(BaseTestCase):
         self.assertEqual(self.expected_data, data_dict)
 
     def get_data(self):
+        print('Our header is: ', self.headers)
         if self.headers:
             return self.client.get(self.url,
                                    headers=json.dumps(self.headers))
