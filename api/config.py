@@ -33,4 +33,3 @@ config_by_name = dict(
     test=TestingConfig,
     prod=ProductionConfig
 )
-

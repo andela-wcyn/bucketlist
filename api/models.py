@@ -6,11 +6,12 @@ from validate_email import validate_email
 
 from api import db, bcrypt
 
+
 class UserToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(300))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False,
-                     unique=True)
+                        unique=True)
 
     def __repr__(self):
         return "<User Token '{}': '{}'".format(
@@ -22,7 +23,8 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True)
     email = db.Column(db.String(120), unique=True)
     _password = db.Column(db.String(), nullable=False)
-    bucketlists = db.relationship('Bucketlist', backref='user', lazy='dynamic')
+    bucketlists = db.relationship('Bucketlist', backref='user',
+                                  lazy='dynamic', cascade="all, delete-orphan")
 
     @hybrid_property
     def password(self):
@@ -139,7 +141,7 @@ class Bucketlist(db.Model):
     date = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.String(300), nullable=False)
     items = db.relationship('BucketlistItem', backref='bucketlist',
-                            lazy='dynamic')
+                            lazy='dynamic', cascade="all, delete-orphan")
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
@@ -187,7 +189,8 @@ class BucketlistItem(db.Model):
     date = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.String(300), nullable=False)
     bucketlist_id = db.Column(db.Integer, db.ForeignKey('bucketlist.id'),
-                                  nullable=False)
+                              nullable=False)
+
     def __repr__(self):
         return "<Bucketlist Item '{}': '{}'>".format(
             self.description, self.bucketlist_id)
@@ -225,4 +228,3 @@ class BucketlistItem(db.Model):
         bucketlist_item = BucketlistItem.query.filter_by(
             id=bucketlist_item_id).first()
         return bucketlist_item
-

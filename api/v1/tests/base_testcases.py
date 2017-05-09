@@ -14,21 +14,22 @@ class BaseTestCase(TestCase):
     every test
     """
     bucketlist_dict = {'user': {
-        'username': 'wcyn'}, 'description':'My Bucketlist', '_links': {
+        'username': 'wcyn'}, 'description': 'My Bucketlist', '_links': {
         'self': '/v1/bucketlists/1', 'collection': '/v1/bucketlists/'
     }, 'item_count': 2, 'id': 1}
     bucketlist2_dict = {'user': {
-        'username': 'wcyn'}, 'description':'My Bucketlist 2', '_links': {
+        'username': 'wcyn'}, 'description': 'My Bucketlist 2', '_links': {
         'self': '/v1/bucketlists/2', 'collection': '/v1/bucketlists/'
     }, 'item_count': 0, 'id': 2}
-    bucketlist_item_dict = {'bucketlist_id': 1, 'description': 'An item',
-                            'done': False, '_links': {
-                'self': '/v1/bucketlists/1/1',
-            'collection': '/v1/bucketlists/1'}, 'id': 1}
-    bucketlist_item2_dict = {'bucketlist_id': 1, 'description': 'An item 2',
-                             'done': False, '_links': {
-            'self': '/v1/bucketlists/1/2', 'collection': '/v1/bucketlists/1'},
-                             'id': 2}
+    bucketlist_item_dict = {
+        'bucketlist_id': 1, 'description': 'An item', 'done': False,
+        '_links': {'self': '/v1/bucketlists/1/1',
+                   'collection': '/v1/bucketlists/1'}, 'id': 1}
+    bucketlist_item2_dict = {
+        'bucketlist_id': 1, 'description': 'An item 2', 'done': False,
+        '_links': {
+            'self': '/v1/bucketlists/1/2',
+            'collection': '/v1/bucketlists/1'}, 'id': 2}
     bucketlist_dict_one = {'bucketlist': {
         'description': 'My Bucketlist', 'user': {
             'username': 'wcyn'}, 'item_count': 2, '_links': {
@@ -52,31 +53,32 @@ class BaseTestCase(TestCase):
         self.user1 = User(username="wcyn",
                           email="cynthia.abura@andela.com",
                           password='12345678')
-        self.user2 = User(username="paul11123", email="paul@andela.com",
-                          password='123456781')
+        self.user2 = User(username="paul", email="paul@andela3.com",
+                          password='12345678')
         self.bucketlist = Bucketlist(description="My Bucketlist",
                                      user=self.user1)
         self.bucketlist2 = Bucketlist(description="My Bucketlist 2",
                                       user=self.user1)
 
-        self.bucketlist_item = BucketlistItem(description="An item")
-        self.bucketlist_item2 = BucketlistItem(description="An item 2")
+        self.bucketlist_item = BucketlistItem(description="An item",
+                                              bucketlist_id=2)
+        self.bucketlist_item2 = BucketlistItem(description="An item 2",
+                                               bucketlist_id=2)
 
-        self.bucketlist.items.append(self.bucketlist_item)
-        self.bucketlist.items.append(self.bucketlist_item2)
         self.db.session.add(self.user1)
         self.db.session.add(self.user2)
         self.db.session.add(self.bucketlist)
         self.db.session.add(self.bucketlist2)
         self.db.session.add(self.bucketlist_item)
         self.db.session.add(self.bucketlist_item2)
+        self.bucketlist.items.append(self.bucketlist_item)
+        self.bucketlist.items.append(self.bucketlist_item2)
         self.db.session.commit()
 
-        self.jwt_token = self.client.post(
+        response = self.client.post(
             url_for('auth.login'), data=json.dumps(
-                {"username": "wcyn", "password": "12345678"})).data.decode()
-        self.jwt_token = json.loads(self.jwt_token).pop("token", "")
-        print("token: ", self.jwt_token)
+                {"username": "wcyn", "password": "12345678"}))
+        self.jwt_token = json.loads(response.get_data(as_text=True))["token"]
 
     def tearDown(self):
         """
@@ -94,14 +96,14 @@ class BaseTestCase(TestCase):
             return {'message':
                     "Bucketlist item '{}' does not exist. You have requested "
                     "this URI [/v1/bucketlists/{}{}] but did you mean "
-                    "/v1/bucketlists/<int:id> ?".format(original_item_id,
-                                                            id,
-                                                            item_id)}
+                    "/v1/bucketlists/<int:id> ?".format(
+                        original_item_id, id, item_id)}
         else:
             return {'message':
                     "Bucketlist '{}' does not exist. You have requested "
                     "this URI [/v1/bucketlists/{}{}] but did you mean "
                     "/v1/bucketlists/<int:id> ?".format(id, id, item_id)}
+
 
 class APIGetTestCase(BaseTestCase):
     """
@@ -128,14 +130,11 @@ class APIGetTestCase(BaseTestCase):
         if "data" in data:
             data = data.get("data")
             if isinstance(data, list):
-                print("ADta zero: ", data)
                 data = data[0]
             if container:
                 for key in container:
                     data = data[key]
-        print("\n\nResponse: ", response)
         self.assertEqual(response.status_code, self.status)
-        print("\n%% Get data dict: ", data)
         self.assertEqual(len(self.expected_data), len(data))
 
         # Ensure expected data exists in response
@@ -164,7 +163,6 @@ class APIGetTestCase(BaseTestCase):
         else:
             token += self.jwt_token
         self.headers.update({"Authorization": token})
-        print("\n\nHeaders: ", json.dumps(self.headers), type(json.dumps(self.headers)))
         if self.headers:
             return self.client.get(self.url,
                                    headers=self.headers)
@@ -186,7 +184,6 @@ class APIPostTestCase(BaseTestCase):
     def create(self):
         response = self.post()
         data_dict = json.loads(response.data)
-        print("Data post: ", data_dict)
         self.assertEqual(response.status_code, self.status)
         self.assertEqual(self.expected_data, data_dict)
 
@@ -221,7 +218,6 @@ class APIPutTestCase(BaseTestCase):
     def modify(self):
         response = self.put()
         data_dict = json.loads(response.data)
-        print("\nModified: ", data_dict)
         self.assertEqual(response.status_code, self.status)
         self.assertNotEqual(self.original_data, data_dict)
         self.assertEqual(self.expected_data, data_dict)
@@ -247,23 +243,26 @@ class APIDeleteTestCase(BaseTestCase):
     Test abstraction for all the API DELETE requests
     """
     url = ""
-    deleted_data = {}
-    status = 204
-    headers = {}
+    expected_data = {}
+    status = 200
+    headers = {"Content-Type": "application/json"}
+    token = ""
 
     def remove(self):
-        response = self.delete()
-        self.assertEqual(response.status_code, self.status)
+        response = self.delete_item()
+        # self.assertEqual(response.status_code, self.status)
         # Check that object does not exist by GETTING it
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data, self.expected_data)
 
-    def delete(self):
+    def delete_item(self):
+        token = "JWT "
+        if self.token:
+            token += self.token
+        else:
+            token += self.jwt_token
+        self.headers.update({"Authorization": token})
         if self.headers:
-            return self.client.delete(self.url,
-                                      headers=self.headers)
+            return self.client.delete(self.url, headers=self.headers)
         else:
             return self.client.delete(self.url)
-
-
-

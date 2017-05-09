@@ -133,12 +133,10 @@ class BucketlistItemSchema(ma.Schema):
                 data['bucketlist_id'])
             data['_links']['self'] = data['_links'][
                                          'collection'] + '/' + str(data['id'])
-        print("\n\n Post dump bucketlist item: ", data)
         return data
 
     @post_load
     def get_bucketlist_item(self, data):
-        print("\n\n Post load bucketlist item: ", data)
         return BucketlistItem(**data)
 
     @staticmethod
@@ -173,7 +171,6 @@ class Bucketlists(Resource):
 
         bucket_lists = Bucketlist.query.filter_by(user=current_identity)
         if q:
-            print("\n\n Yes q!! ")
             bucket_lists = bucket_lists.filter(Bucketlist.description.ilike(
                 "%" + literal(q) + "%"))
         bucket_lists = bucket_lists.paginate(page, limit, error_out=False)
@@ -232,7 +229,8 @@ class BucketlistDetails(Resource):
             bucketlist_items = bucketlist_items.filter(
                 BucketlistItem.description.ilike("%" + literal(q) + "%"))
 
-        bucketlist_items = bucketlist_items.paginate(page, limit, error_out=False)
+        bucketlist_items = bucketlist_items.paginate(page, limit,
+                                                     error_out=False)
         page_base_url = url_for("bucketlists.bucketlists") + str(id) + "?"
         bucketlist_data, error = bucketlist_schema.dump(bucketlist)
         if error:
@@ -240,22 +238,20 @@ class BucketlistDetails(Resource):
         data = {
             'bucketlist': bucketlist_data
         }
-        print("Data one: ", data)
         bucketlist_items_data, error = bucketlist_items_schema.dump(
             bucketlist_items.items)
         if error:
             return msg.format_field_errors(error)
         # bucketlist_items_schema.dump(bucketlist_items_data.items)
         data['bucketlist']['items'] = bucketlist_items_data
-        print("Data two: ", data['bucketlist'])
         return {"data": data,
                 "current_page": bucketlist_items.page,
                 "has_next": bucketlist_items.has_next,
                 "has_previous": bucketlist_items.has_prev,
                 "next_page": page_base_url + "page=" +
-                             str(bucketlist_items.next_num),
+                str(bucketlist_items.next_num),
                 "previous_page": page_base_url + "page=" +
-                                 str(bucketlist_items.prev_num),
+                str(bucketlist_items.prev_num),
                 "total": bucketlist_items.total
                 }
 

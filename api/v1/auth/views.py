@@ -80,9 +80,7 @@ class Register(Resource):
     @staticmethod
     def post():
         post_data = json.loads(request.data.decode())
-        # print("Request decoded: ", post_data, type(post_data))
         data, error = user_schema.load(post_data)
-        # print("\n\n **result args:  ", data, error)
         if error:
             return err.format_field_errors(error)
         user = User(username=post_data['username'], email=post_data['email'],
@@ -90,9 +88,7 @@ class Register(Resource):
         user = user.create_user()
         if isinstance(user, User):
             user_data, error = user_schema.dump(data)
-            print("User_d: ", user_data, error)
             if error:
-                print("Error: ", error)
                 return err.format_field_errors(error)
             return user_data, 201
         return err.format_general_errors(
@@ -110,8 +106,6 @@ class Login(Resource):
             user = User.authenticate(post_data['username'],
                                      post_data['password'],
                                      method='username')
-        # print("Request decoded: ", post_data, type(post_data))
-        print("\n\nUser!!: ", user)
         if isinstance(user, User):
             secret = app.config.get('SECRET_KEY')
             token = user.generate_auth_token(secret)
