@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/andela-wcyn/bucketlist.svg?branch=develop)](https://travis-ci.org/andela-wcyn/bucketlist)
 # bucketlist
 
 A Flask API Application Backend to manage bucketlists
