@@ -8,6 +8,9 @@ from api import db, bcrypt
 
 
 class UserToken(db.Model):
+    """
+    JWT token model generated when a user logs in
+    """
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(300))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False,
@@ -19,6 +22,9 @@ class UserToken(db.Model):
 
 
 class User(db.Model):
+    """
+    User data columns to be stored in the database
+    """
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True)
     email = db.Column(db.String(120), unique=True)
@@ -38,10 +44,10 @@ class User(db.Model):
     def valid_email(email_str):
         """
         Return email_str if valid, raise an exception in other case.
-        :param email_str:
-        :type email_str:
-        :return:
-        :rtype:
+        :param email_str: a email to be set for the user
+        :type email_str: string
+        :return: the validated email or False
+        :rtype: str or bool
         """
         if validate_email(email_str):
             return email_str
@@ -52,8 +58,8 @@ class User(db.Model):
     def valid_password(pass_str):
         """
         Return pass_str if valid, raise an exception in other case.
-        :param pass_str:
-        :type pass_str:
+        :param pass_str: a password to be set for the user
+        :type pass_str: str
         :return:
         :rtype:
         """

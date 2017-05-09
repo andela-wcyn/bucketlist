@@ -1,4 +1,3 @@
-from flask import json
 from flask import url_for
 
 from .base_testcases import (BaseTestCase, APIGetTestCase,

@@ -18,23 +18,25 @@ err = ErrorFormatter()
 
 
 class UserSchema(ma.Schema):
+    """
+    Class to serialize User model data for registration
+    """
     username = fields.Str(required=True)
     email = fields.Email(required=True)
     password = fields.Str(required=True, load_only=True,
                           error_messages={
                                'required': 'Password is required.'})
-    # Smart hyperlinking
-    _links = ma.Hyperlinks({
-        'self': ma.URLFor('auth.register'),
-        'collection': ma.URLFor('bucketlists.bucketlists')
-    })
-
-    # @post_load
-    # def make_user(self, data):
-    #     return User(**data)
 
     @validates('username')
     def validate_username(self, username):
+        """
+        Ensure that username is more that 4 characters and less than 20
+        characters
+        :param username: Username sent in the response
+        :type username: string
+        :return: Error if validation requirements not met
+        :rtype: ValidationError
+        """
         if len(username) < 4:
             raise ValidationError('Username must have 4 or more characters.')
         elif len(username) > 20:
@@ -46,37 +48,50 @@ class UserSchema(ma.Schema):
 
     @validates('email')
     def validate_email(self, email):
+        """
+        Ensure that email does not already exist in the database
+        characters
+        :param email: email sent in the response
+        :type email: string
+        :return: Error if validation requirements not met
+        :rtype: ValidationError
+        """
         if User.email_exists(email):
             raise ValidationError("The email '{}' is already in use".format(
                 email))
 
     @validates('password')
     def validate_password(self, password):
+        """
+        Ensure that password has more than 6 characters
+        :param password: password sent in the response
+        :type password: string
+        :return: Error if validation requirements not met
+        :rtype: ValidationError
+        """
         if len(password) < 7:
             raise ValidationError('Password must have more than 6 characters.')
 
 
 class LoginSchema(ma.Schema):
+    """
+    Class to serialize User model data for login
+    """
     username = fields.Str()
     email = fields.Email()
     password = fields.Str(required=True, load_only=True,
                           error_messages={
                                'required': 'Password is required.'})
-    # Smart hyperlinking
-    _links = ma.Hyperlinks({
-        'self': ma.URLFor('auth.register'),
-        'collection': ma.URLFor('bucketlists.bucketlists')
-    })
 
-    # @post_load
-    # def make_user(self, data):
-    #     return User(**data)
 
 user_schema = UserSchema()
 login_schema = LoginSchema()
 
 
 class Register(Resource):
+    """
+    Create a new user
+    """
     @staticmethod
     def post():
         post_data = json.loads(request.data.decode())
@@ -96,6 +111,9 @@ class Register(Resource):
 
 
 class Login(Resource):
+    """
+    Login an already registered user
+    """
     @staticmethod
     def post():
         post_data = json.loads(request.data.decode())
