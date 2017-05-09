@@ -53,7 +53,7 @@ class BaseTestCase(TestCase):
         self.user1 = User(username="wcyn",
                           email="cynthia.abura@andela.com",
                           password='12345678')
-        self.user2 = User(username="paul", email="paul@andela3.com",
+        self.user2 = User(username="paul", email="paul@andela.com",
                           password='12345678')
         self.bucketlist = Bucketlist(description="My Bucketlist",
                                      user=self.user1)
@@ -78,7 +78,11 @@ class BaseTestCase(TestCase):
         response = self.client.post(
             url_for('auth.login'), data=json.dumps(
                 {"username": "wcyn", "password": "12345678"}))
-        self.jwt_token = json.loads(response.get_data(as_text=True))["token"]
+        print("response: ", response.data)
+        response_data = json.loads(response.get_data(as_text=True))
+        self.jwt_token = ""
+        if "token" in response_data:
+            self.jwt_token = response_data["token"]
 
     def tearDown(self):
         """

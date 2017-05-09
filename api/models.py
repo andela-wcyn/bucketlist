@@ -1,9 +1,7 @@
 from datetime import datetime, timedelta
-import jwt
 from sqlalchemy.ext.hybrid import hybrid_property
 from validate_email import validate_email
-
-
+import jwt
 from api import db, bcrypt
 
 

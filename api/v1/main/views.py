@@ -1,3 +1,5 @@
+import json
+
 from flask import jsonify
 
 from . import main
@@ -38,5 +40,14 @@ def internal_server_error(e):
     data = {
         "error": "500",
         "message": "Internal Server Error"
+    }
+    return jsonify(data), 500
+
+
+@main.app_errorhandler(json.decoder.JSONDecodeError)
+def json_decoder_error(e):
+    data = {
+        "error": "500",
+        "message": "Your request contains invalid JSON"
     }
     return jsonify(data), 500

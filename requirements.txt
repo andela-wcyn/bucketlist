@@ -19,7 +19,6 @@ Flask-Testing==0.6.2
 idna==2.5
 itsdangerous==0.24
 Jinja2==2.9.6
-jwt==0.5.2
 Mako==1.0.6
 MarkupSafe==1.0
 marshmallow==2.13.5
