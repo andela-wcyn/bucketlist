@@ -247,17 +247,24 @@ class APIDeleteTestCase(BaseTestCase):
     Test abstraction for all the API DELETE requests
     """
     url = ""
+    bucketlist_id = None
     expected_data = {}
     status = 200
     headers = {"Content-Type": "application/json"}
     token = ""
+    not_exists = {"message": "Does not exist"}
 
     def remove(self):
         response = self.delete_item()
+        data_dict = json.loads(response.data)
+        self.assertEqual(data_dict, self.expected_data)
         # self.assertEqual(response.status_code, self.status)
         # Check that object does not exist by GETTING it
-        response = self.client.get(self.url)
-        self.assertEqual(response.data, self.expected_data)
+        bucketlist = Bucketlist.query.filter_by(
+            id=self.bucketlist_id).first()
+        # print("bucketlist: ", dir(bucketlist))
+        print("bucketlist: ", bucketlist)
+        self.assertEqual(bucketlist, None)
 
     def delete_item(self):
         token = "JWT "

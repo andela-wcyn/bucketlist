@@ -106,6 +106,8 @@ class User(db.Model):
         """
         token = jwt.encode({
             'id': self.id,
+            'email': self.email,
+            'username': self.username,
             'exp': datetime.utcnow() + timedelta(seconds=expiration),
             'iat': datetime.utcnow(),
             'nbf': datetime.utcnow()

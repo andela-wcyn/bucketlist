@@ -6,7 +6,6 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config(object):
     SECRET_KEY = os.getenv('SECRET_KEY', 'secret')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    WHOOSH_BASE = os.path.join(basedir, 'bucketlist_search.db')
     DEBUG = False
 
 
@@ -24,8 +23,8 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        'DATABASE_URL', 'postgresql://localhost/bucketlist')
+    # SQLALCHEMY_DATABASE_URI = os.getenv(
+    #     'DATABASE_URL', 'postgresql://localhost/bucketlist')
 
 
 config_by_name = dict(
