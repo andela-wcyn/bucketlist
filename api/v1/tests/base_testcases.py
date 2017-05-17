@@ -99,14 +99,15 @@ class BaseTestCase(TestCase):
         if item:
             return {'message':
                     "Bucketlist item '{}' does not exist. You have requested "
-                    "this URI [/v1/bucketlists/{}{}] but did you mean "
-                    "/v1/bucketlists/<int:id> ?".format(
+                    "this URI [/api/v1/bucketlists/{}{}] but did you mean "
+                    "/api/v1/bucketlists/<int:id> ?".format(
                         original_item_id, id, item_id)}
         else:
             return {'message':
                     "Bucketlist '{}' does not exist. You have requested "
-                    "this URI [/v1/bucketlists/{}{}] but did you mean "
-                    "/v1/bucketlists/<int:id> ?".format(id, id, item_id)}
+                    "this URI [/api/v1/bucketlists/{}{}] but did you mean "
+                    "/api/v1/bucketlists/<int:id> ?"
+                        .format(id, id, item_id)}
 
 
 class APIGetTestCase(BaseTestCase):

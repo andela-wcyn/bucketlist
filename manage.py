@@ -2,6 +2,8 @@ import os
 
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager, prompt_bool
+from flask_script import Server
+from flask import current_app as app
 
 from api import create_app, db
 from api.models import User, Bucketlist, BucketlistItem
@@ -11,6 +13,7 @@ manager = Manager(app)
 migrate = Migrate(app, db)
 
 manager.add_command('db', MigrateCommand)
+manager.add_command('runserver', Server(host=app.config.get('HOST')))
 
 
 @manager.command
