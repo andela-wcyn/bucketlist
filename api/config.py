@@ -26,8 +26,8 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
     HOST = '0.0.0.0'
-    # SQLALCHEMY_DATABASE_URI = os.getenv(
-    #     'DATABASE_URL', 'postgresql://localhost/bucketlist')
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        'DATABASE_URL', 'postgresql://localhost/bucketlist')
 
 
 config_by_name = dict(
