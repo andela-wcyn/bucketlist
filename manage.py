@@ -3,7 +3,6 @@ import os
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager, prompt_bool
 from flask_script import Server
-from flask import current_app as app
 
 from api import create_app, db
 from api.models import User, Bucketlist, BucketlistItem
