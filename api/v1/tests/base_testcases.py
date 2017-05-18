@@ -54,7 +54,7 @@ class BaseTestCase(TestCase):
         self.user1 = User(username="wcyn",
                           email="cynthia.abura@andela.com",
                           password='12345678')
-        self.user2 = User(username="paul", email="paul@andela3.com",
+        self.user2 = User(username="paul", email="paul@andela.com",
                           password='12345678')
         self.bucketlist = Bucketlist(description="My Bucketlist",
                                      user=self.user1)
@@ -79,7 +79,11 @@ class BaseTestCase(TestCase):
         response = self.client.post(
             url_for('auth.login'), data=json.dumps(
                 {"username": "wcyn", "password": "12345678"}))
-        self.jwt_token = json.loads(response.get_data(as_text=True))["token"]
+        print("response: ", response.data)
+        response_data = json.loads(response.get_data(as_text=True))
+        self.jwt_token = ""
+        if "token" in response_data:
+            self.jwt_token = response_data["token"]
 
     def tearDown(self):
         """
@@ -245,17 +249,24 @@ class APIDeleteTestCase(BaseTestCase):
     Test abstraction for all the API DELETE requests
     """
     url = ""
+    bucketlist_id = None
     expected_data = {}
     status = 200
     headers = {"Content-Type": "application/json"}
     token = ""
+    not_exists = {"message": "Does not exist"}
 
     def remove(self):
         response = self.delete_item()
+        data_dict = json.loads(response.data)
+        self.assertEqual(data_dict, self.expected_data)
         # self.assertEqual(response.status_code, self.status)
         # Check that object does not exist by GETTING it
-        response = self.client.get(self.url)
-        self.assertEqual(response.data, self.expected_data)
+        bucketlist = Bucketlist.query.filter_by(
+            id=self.bucketlist_id).first()
+        # print("bucketlist: ", dir(bucketlist))
+        print("bucketlist: ", bucketlist)
+        self.assertEqual(bucketlist, None)
 
     def delete_item(self):
         token = "JWT "

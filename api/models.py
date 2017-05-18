@@ -1,9 +1,7 @@
 from datetime import datetime, timedelta
-import jwt
 from sqlalchemy.ext.hybrid import hybrid_property
 from validate_email import validate_email
-
-
+import jwt
 from api import db, bcrypt
 
 
@@ -108,6 +106,8 @@ class User(db.Model):
         """
         token = jwt.encode({
             'id': self.id,
+            'email': self.email,
+            'username': self.username,
             'exp': datetime.utcnow() + timedelta(seconds=expiration),
             'iat': datetime.utcnow(),
             'nbf': datetime.utcnow()

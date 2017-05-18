@@ -1,4 +1,3 @@
-from flask import current_app
 from flask import json
 from flask import request
 from flask import url_for

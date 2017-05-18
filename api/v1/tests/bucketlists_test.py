@@ -262,10 +262,8 @@ class BucketlistsDeleteTestCase(APIDeleteTestCase):
         """
         Test it deletes a bucketlist
         """
-
         self.bucketlist_id = 1
         self.url = url_for('bucketlists.bucketlists') + str(self.bucketlist_id)
-        print("URL: ", self.url)
         self.expected_data = {"message": "Bucketlist successfully deleted"}
         self.remove()
 
@@ -274,8 +272,9 @@ class BucketlistsDeleteTestCase(APIDeleteTestCase):
         Test it returns 404 if Bucketlist does not exist
         """
 
-        self.url = url_for('bucketlists.bucketlists') + "7"
-        self.expected_data = self.not_exists_message("7")
+        self.bucketlist_id = 7
+        self.url = url_for('bucketlists.bucketlists') + str(self.bucketlist_id)
+        self.expected_data = self.not_exists_message(str(self.bucketlist_id))
         self.status = 404
         self.remove()
         pass

@@ -5,6 +5,7 @@ from flask import current_app as app
 from flask_restful import Api, Resource
 from marshmallow import ValidationError
 from marshmallow import fields
+from marshmallow import pre_load
 from marshmallow import validates
 
 from api.message_formatter import ErrorFormatter
@@ -83,7 +84,12 @@ class LoginSchema(ma.Schema):
                           error_messages={
                                'required': 'Password is required.'})
 
-
+    @pre_load
+    def ensure_username_or_email_present(self, data):
+        if 'email' not in data and 'username' not in data:
+            raise ValidationError(
+                'You must provide a username or email.')
+        return data
 user_schema = UserSchema()
 login_schema = LoginSchema()
 
@@ -117,7 +123,11 @@ class Login(Resource):
     @staticmethod
     def post():
         post_data = json.loads(request.data.decode())
-        user = None
+        user_data, error = login_schema.load(post_data)
+        if error:
+            return err.format_field_errors(error)
+        print("No errors: ", user_data)
+
         if 'email' in post_data:
             user = User.authenticate(post_data['email'], post_data['password'])
         elif 'username' in post_data:
