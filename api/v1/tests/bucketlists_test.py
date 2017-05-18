@@ -92,7 +92,12 @@ class BucketlistsGetTestCase(APIGetTestCase):
         Test it returns 404 Bad Request error when bucketlist does not exist
         """
         self.url = url_for('bucketlists.bucketlists') + "4/1"
-        self.expected_data = self.not_exists_message("4", "1")
+        self.expected_data = {
+            'message':
+                "Bucketlist '{}' does not exist. You have requested "
+                "this URI [/api/v1/bucketlists/{}/{}] but did you mean "
+                "/api/v1/bucketlists/<int:id> ?"
+                .format(4, 4, 1)}
         self.status = 404
         self.get_one()
 
@@ -108,8 +113,8 @@ class BucketlistsPostTestCase(APIPostTestCase):
         """
         self.post_data = {'description': 'Travel'}
         self.expected_data = {'item_count': 0, 'id': 3, '_links': {
-            'self': '/v1/bucketlists/3',
-            'collection': '/v1/bucketlists/'},
+            'self': '/api/v1/bucketlists/3',
+            'collection': '/api/v1/bucketlists/'},
                           'description': 'Travel',
                           'user': {'username': self.user1.username}}
         self.url = url_for('bucketlists.bucketlists')
@@ -153,8 +158,8 @@ class BucketlistsPostTestCase(APIPostTestCase):
         }
         self.expected_data = {'id': 3, 'description': 'Travel to Cairo',
                               'done': True, '_links': {
-                                'self': '/v1/bucketlists/1/3',
-                                'collection': '/v1/bucketlists/1'},
+                                'self': '/api/v1/bucketlists/1/3',
+                                'collection': '/api/v1/bucketlists/1'},
                               'bucketlist_id': 1}
         self.url = url_for('bucketlists.bucketlists') + "1"
         self.create()
@@ -214,8 +219,8 @@ class BucketlistsPutTestCase(APIPutTestCase):
         self.original_data = BaseTestCase.bucketlist_dict
         self.expected_data = {
             'user': {'username': 'wcyn'}, 'id': 1,
-            '_links': {'self': '/v1/bucketlists/1',
-                       'collection': '/v1/bucketlists/'},
+            '_links': {'self': '/api/v1/bucketlists/1',
+                       'collection': '/api/v1/bucketlists/'},
             'description': 'My Bucketlist modified', 'item_count': 2}
         self.url = url_for('bucketlists.bucketlists') + "1"
         self.modify()
@@ -257,19 +262,20 @@ class BucketlistsDeleteTestCase(APIDeleteTestCase):
         """
         Test it deletes a bucketlist
         """
-        # self.token = self.jwt_token
-        # self.url = url_for('bucketlists.bucketlists') + "1"
-        # self.expected_data = {"Bucketlist successfully deleted"}
-        # self.remove()
-        pass
+
+        self.bucketlist_id = 1
+        self.url = url_for('bucketlists.bucketlists') + str(self.bucketlist_id)
+        print("URL: ", self.url)
+        self.expected_data = {"message": "Bucketlist successfully deleted"}
+        self.remove()
 
     def test_delete_bucketlists_id_not_exists(self):
         """
         Test it returns 404 if Bucketlist does not exist
         """
 
-        # self.url = url_for('bucketlists.bucketlists') + "7"
-        # self.expected_data = self.not_exists_message("7")
-        # self.status = 404
-        # self.remove()
+        self.url = url_for('bucketlists.bucketlists') + "7"
+        self.expected_data = self.not_exists_message("7")
+        self.status = 404
+        self.remove()
         pass

@@ -15,25 +15,26 @@ class BaseTestCase(TestCase):
     """
     bucketlist_dict = {'user': {
         'username': 'wcyn'}, 'description': 'My Bucketlist', '_links': {
-        'self': '/v1/bucketlists/1', 'collection': '/v1/bucketlists/'
+        'self': '/api/v1/bucketlists/1', 'collection': '/api/v1/bucketlists/'
     }, 'item_count': 2, 'id': 1}
     bucketlist2_dict = {'user': {
         'username': 'wcyn'}, 'description': 'My Bucketlist 2', '_links': {
-        'self': '/v1/bucketlists/2', 'collection': '/v1/bucketlists/'
+        'self': '/api/v1/bucketlists/2', 'collection': '/api/v1/bucketlists/'
     }, 'item_count': 0, 'id': 2}
     bucketlist_item_dict = {
         'bucketlist_id': 1, 'description': 'An item', 'done': False,
-        '_links': {'self': '/v1/bucketlists/1/1',
-                   'collection': '/v1/bucketlists/1'}, 'id': 1}
+        '_links': {'self': '/api/v1/bucketlists/1/1',
+                   'collection': '/api/v1/bucketlists/1'}, 'id': 1}
     bucketlist_item2_dict = {
         'bucketlist_id': 1, 'description': 'An item 2', 'done': False,
         '_links': {
-            'self': '/v1/bucketlists/1/2',
-            'collection': '/v1/bucketlists/1'}, 'id': 2}
+            'self': '/api/v1/bucketlists/1/2',
+            'collection': '/api/v1/bucketlists/1'}, 'id': 2}
     bucketlist_dict_one = {'bucketlist': {
         'description': 'My Bucketlist', 'user': {
             'username': 'wcyn'}, 'item_count': 2, '_links': {
-            'self': '/v1/bucketlists/1', 'collection': '/v1/bucketlists/'},
+            'self': '/api/v1/bucketlists/1', 'collection':
+                '/api/v1/bucketlists/'},
         'id': 1, 'items': [bucketlist_item_dict, bucketlist_item2_dict]}}
 
     def create_app(self):
@@ -95,14 +96,15 @@ class BaseTestCase(TestCase):
         if item:
             return {'message':
                     "Bucketlist item '{}' does not exist. You have requested "
-                    "this URI [/v1/bucketlists/{}{}] but did you mean "
-                    "/v1/bucketlists/<int:id> ?".format(
+                    "this URI [/api/v1/bucketlists/{}{}] but did you mean "
+                    "/api/v1/bucketlists/<int:id> ?".format(
                         original_item_id, id, item_id)}
         else:
             return {'message':
                     "Bucketlist '{}' does not exist. You have requested "
-                    "this URI [/v1/bucketlists/{}{}] but did you mean "
-                    "/v1/bucketlists/<int:id> ?".format(id, id, item_id)}
+                    "this URI [/api/v1/bucketlists/{}{}] but did you mean "
+                    "/api/v1/bucketlists/<int:id> or /api/v1/auth/register ?"
+                        .format(id, id, item_id)}
 
 
 class APIGetTestCase(BaseTestCase):
