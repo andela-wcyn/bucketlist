@@ -1,0 +1,21 @@
+language: python
+python:
+- '3.6'
+install:
+- pip install -r requirements_devel.txt
+- pip install coveralls
+
+branches:
+  only:
+    - develop
+    - master
+    - tests
+addons:
+  postgresql: '9.4'
+script:
+  - psql -c 'create database bucketlist_test;' -U postgres
+  - nosetests --rednose --with-coverage
+after_success: coveralls
+cache: pip
+notifications:
+  email: cynthia.abura@andela.com

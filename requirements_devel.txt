@@ -1,0 +1,12 @@
+#
+# Requirements for bucketlist during development
+#
+
+# Production packages
+-r requirements.txt
+
+# Development packages
+nose
+pep8
+rednose
+coverage
